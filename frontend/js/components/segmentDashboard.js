@@ -109,21 +109,21 @@ export class SegmentDashboardComponent {
         const list = document.createElement('div');
         list.className = 'demographic-list';
 
-        // Handle all cities (sorted by count, descending)
-        if (demographics.top_cities) {
-            const cities = Array.isArray(demographics.top_cities) 
-                ? demographics.top_cities 
-                : Object.entries(demographics.top_cities)
+        // Handle all countries (sorted by count, descending)
+        if (demographics.top_countries) {
+            const countries = Array.isArray(demographics.top_countries) 
+                ? demographics.top_countries 
+                : Object.entries(demographics.top_countries)
                     .sort((a, b) => b[1] - a[1]); // Sort by count descending
 
             let totalCount = 0;
-            cities.forEach(([city, count]) => {
-                list.appendChild(this.createDemographicItem(city, count));
+            countries.forEach(([country, count]) => {
+                list.appendChild(this.createDemographicItem(country, count));
                 totalCount += parseInt(count);
             });
 
             // Add total row
-            if (cities.length > 1) {
+            if (countries.length > 1) {
                 const totalItem = this.createDemographicItem('Total', totalCount);
                 totalItem.classList.add('demographic-total');
                 list.appendChild(totalItem);

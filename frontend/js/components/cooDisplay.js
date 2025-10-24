@@ -21,20 +21,20 @@ export class CooDisplayComponent {
         // Campaign Goal
         this.container.appendChild(this.createCooItem(
             'Campaign Goal',
-            `<span class="coo-badge">${this.formatValue(coo.campaign_goal)}</span>`
+            `<span class="coo-badge badge-primary">${this.formatValue(coo.campaign_goal)}</span>`
         ));
 
         // Target Behavior
         this.container.appendChild(this.createCooItem(
             'Target Behavior',
-            this.formatValue(coo.target_behavior)
+            `<span class="coo-badge badge-info">${this.formatValue(coo.target_behavior)}</span>`
         ));
 
         // Target Subgroup
         if (coo.target_subgroup) {
             this.container.appendChild(this.createCooItem(
                 'Target Subgroup',
-                `<span class="coo-badge" style="background: var(--secondary-color);">${this.formatValue(coo.target_subgroup)}</span>`
+                `<span class="coo-badge badge-secondary">${this.formatValue(coo.target_subgroup)}</span>`
             ));
         }
 
@@ -46,7 +46,7 @@ export class CooDisplayComponent {
             
             this.container.appendChild(this.createCooItem(
                 'Success Metric',
-                `${this.formatValue(coo.metric_target.type)}: <strong>${metricValue}</strong>`
+                `<span class="coo-badge badge-warning">${this.formatValue(coo.metric_target.type)}: ${metricValue}</span>`
             ));
         }
 
@@ -54,14 +54,14 @@ export class CooDisplayComponent {
         if (coo.time_constraint) {
             this.container.appendChild(this.createCooItem(
                 'Time Constraint',
-                this.formatValue(coo.time_constraint)
+                `<span class="coo-badge badge-purple">${this.formatValue(coo.time_constraint)}</span>`
             ));
         }
 
         // Proposed Intervention
         this.container.appendChild(this.createCooItem(
             'Proposed Intervention',
-            `<span class="coo-badge" style="background: var(--success-color);">${this.formatValue(coo.proposed_intervention)}</span>`
+            `<span class="coo-badge badge-success">${this.formatValue(coo.proposed_intervention)}</span>`
         ));
 
         // Underlying Assumptions

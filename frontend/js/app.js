@@ -346,7 +346,7 @@ class AetherSegmentApp {
         setTimeout(() => scrollToElement(this.activateSegmentSection), 100);
     }
 
-    handleTriggerSelection(trigger) {
+    async handleTriggerSelection(trigger) {
         // Store selected trigger
         this.selectedTrigger = trigger;
         
@@ -356,45 +356,66 @@ class AetherSegmentApp {
         const applyBtn = document.getElementById('apply-trigger-btn');
         
         if (previewCard && previewContent) {
-            // Calculate deterministic impact based on trigger's predicted uplift
             const currentSize = this.currentAnalysis.segment_preview.estimated_size;
             
-            // Use trigger's predicted_uplift to estimate retention rate
-            // Higher uplift = more customers will respond = keep more in segment
-            const upliftScore = trigger.predicted_uplift || 0.65;
-            const reductionFactor = 0.4 + (upliftScore * 0.4); // 40-80% retention based on uplift
-            const filteredSize = Math.round(currentSize * reductionFactor);
-            
-            // Store the filtered size for when user applies
-            this.selectedTrigger.filteredSize = filteredSize;
-            
+            // Show loading state
             previewContent.innerHTML = `
-                <div class="preview-comparison">
-                    <div class="preview-metric before">
-                        <div class="metric-label">Before Trigger Filter</div>
-                        <div class="metric-value">${currentSize.toLocaleString()}</div>
-                        <div class="metric-sublabel">All eligible customers</div>
-                    </div>
-                    <div class="preview-arrow">→</div>
-                    <div class="preview-metric after">
-                        <div class="metric-label">After ${trigger.trigger_name.replace('_', ' ')}</div>
-                        <div class="metric-value">${filteredSize.toLocaleString()}</div>
-                        <div class="metric-change neutral">${Math.round((filteredSize/currentSize)*100)}% retained</div>
-                    </div>
-                </div>
-                <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md); margin-top: 1rem;">
-                    <p><strong>Impact:</strong> Segment will be filtered to customers with high sensitivity to <strong>${trigger.trigger_name.replace('_', ' ')}</strong>.</p>
-                    <p style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">
-                        Only customers with ${trigger.trigger_name.replace('_', ' ')} sensitivity score > 65% will be included.
-                    </p>
-                    <p style="margin-top: 0.5rem; color: var(--success-color); font-size: 0.9rem;">
-                        <strong>Predicted Uplift: ${Math.round(upliftScore * 100)}%</strong>
-                    </p>
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="spinner" style="margin: 0 auto 1rem;"></div>
+                    <p>Calculating trigger impact from BigQuery...</p>
                 </div>
             `;
-            
             previewCard.style.display = 'block';
-            if (applyBtn) applyBtn.style.display = 'inline-block';
+            
+            try {
+                // Call backend to get REAL filtered size from BigQuery
+                const preview = await apiClient.previewFilters(
+                    this.currentAnalysis.campaign_objective_object,
+                    {},  // No manual filters yet
+                    trigger.trigger_name  // Apply trigger sensitivity filter
+                );
+                
+                const filteredSize = preview.final_size;
+                
+                // Store the REAL filtered size for when user applies
+                this.selectedTrigger.filteredSize = filteredSize;
+                
+                const upliftScore = trigger.predicted_uplift || 0.65;
+                
+                previewContent.innerHTML = `
+                    <div class="preview-comparison">
+                        <div class="preview-metric before">
+                            <div class="metric-label">Before Trigger Filter</div>
+                            <div class="metric-value">${currentSize.toLocaleString()}</div>
+                            <div class="metric-sublabel">All eligible customers</div>
+                        </div>
+                        <div class="preview-arrow">→</div>
+                        <div class="preview-metric after">
+                            <div class="metric-label">After ${trigger.trigger_name.replace('_', ' ')}</div>
+                            <div class="metric-value">${filteredSize.toLocaleString()}</div>
+                            <div class="metric-change neutral">${Math.round((filteredSize/currentSize)*100)}% retained</div>
+                        </div>
+                    </div>
+                    <div style="padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md); margin-top: 1rem;">
+                        <p><strong>Impact:</strong> Segment will be filtered to customers with high sensitivity to <strong>${trigger.trigger_name.replace('_', ' ')}</strong>.</p>
+                        <p style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                            Only customers with ${trigger.trigger_name.replace('_', ' ')} sensitivity score > 65% will be included.
+                        </p>
+                        <p style="margin-top: 0.5rem; color: var(--success-color); font-size: 0.9rem;">
+                            <strong>Predicted Uplift: ${Math.round(upliftScore * 100)}%</strong>
+                        </p>
+                    </div>
+                `;
+                
+                if (applyBtn) applyBtn.style.display = 'inline-block';
+            } catch (error) {
+                console.error('Failed to fetch trigger preview:', error);
+                previewContent.innerHTML = `
+                    <div style="padding: 1rem; background: var(--error-bg); border-radius: var(--radius-md); color: var(--error-color);">
+                        <p><strong>Error:</strong> Failed to calculate trigger impact. ${error.message}</p>
+                    </div>
+                `;
+            }
         }
     }
 
@@ -449,6 +470,9 @@ class AetherSegmentApp {
             showToast('Please add at least one filter to preview', 'warning');
             return;
         }
+        
+        // Get the selected trigger if any
+        const selectedTrigger = this.selectedTrigger ? this.selectedTrigger.trigger_name : null;
 
         const previewBtn = document.getElementById('preview-filters-btn');
         const originalText = previewBtn.innerHTML;
@@ -458,7 +482,8 @@ class AetherSegmentApp {
         try {
             const preview = await apiClient.previewFilters(
                 this.currentAnalysis.campaign_objective_object,
-                filters
+                filters,
+                selectedTrigger  // Pass the selected trigger so backend applies trigger filter
             );
 
             this.displayFilterPreview(preview);
@@ -629,10 +654,14 @@ class AetherSegmentApp {
         applyBtn.disabled = true;
 
         try {
-            // Re-fetch segment preview with applied filters
+            // CRITICAL: Pass selected trigger so preview includes trigger sensitivity filter
+            const selectedTrigger = this.selectedTrigger ? this.selectedTrigger.trigger_name : null;
+            
+            // Re-fetch segment preview with applied filters AND trigger filter
             const preview = await apiClient.previewFilters(
                 this.currentAnalysis.campaign_objective_object,
-                this.appliedFilters
+                this.appliedFilters,
+                selectedTrigger  // Must match what's passed to createSegment
             );
 
             // Update the segment_preview in currentAnalysis with filtered data
@@ -736,6 +765,11 @@ class AetherSegmentApp {
             `;
         }
 
+        // Display comprehensive journey summary
+        if (segment.comprehensive_summary) {
+            this.displayJourneySummary(segment.comprehensive_summary);
+        }
+
         // Display customer list
         this.displayCustomerList(segment.customer_profiles);
 
@@ -782,6 +816,48 @@ class AetherSegmentApp {
             moreInfo.textContent = `+ ${customers.length - displayCount} more customers`;
             customerList.appendChild(moreInfo);
         }
+    }
+
+    displayJourneySummary(summary) {
+        const journeyContainer = document.getElementById('segment-journey-summary');
+        const journeyContent = document.getElementById('journey-content');
+        
+        if (!journeyContainer || !journeyContent || !summary) {
+            return;
+        }
+        
+        // Build filtering steps HTML
+        const stepsHTML = summary.filtering_steps.map((step, index) => {
+            const stepNum = index + 1;
+            return `
+                <div class="journey-step">
+                    <div class="step-number">${stepNum}</div>
+                    <div class="step-content">
+                        <div class="step-title">${step.step}</div>
+                        <div class="step-description">${step.description.replace(/\n/g, '<br>')}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Build final summary
+        const finalHTML = `
+            <div class="journey-steps">
+                ${stepsHTML}
+            </div>
+            <div class="journey-result">
+                <div class="result-icon">✓</div>
+                <div class="result-content">
+                    <div class="result-title">Final Result</div>
+                    <div class="result-description">
+                        ${summary.final_characteristics.total_customers.toLocaleString()} highly-targeted customers with an average CLV score of ${Math.round(summary.final_characteristics.avg_clv_score * 100)}%, optimized for maximum campaign impact.
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        journeyContent.innerHTML = finalHTML;
+        journeyContainer.style.display = 'block';
     }
 
     createCustomerCard(customer) {

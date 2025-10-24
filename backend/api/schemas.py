@@ -128,6 +128,7 @@ class SegmentResponse(BaseModel):
     customer_profiles: List[CustomerProfile]
     metadata: SegmentMetadata
     recommended_trigger: Optional[TriggerRecommendation] = None
+    comprehensive_summary: Optional[Dict[str, Any]] = None  # Full journey summary
 
 
 class FilterRefinementRequest(BaseModel):

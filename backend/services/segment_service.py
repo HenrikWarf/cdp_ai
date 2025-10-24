@@ -206,6 +206,15 @@ class SegmentService:
             trigger_suggestions[0] if trigger_suggestions else None
         )
         
+        # Step 7.5: Generate comprehensive explainability including all filtering steps
+        comprehensive_explainability = self._generate_comprehensive_summary(
+            coo,
+            customer_df,
+            trigger_suggestions,
+            selected_trigger,
+            additional_filters
+        )
+        
         # Step 8: Generate segment ID and cache
         segment_id = generate_segment_id(campaign_objective)
         
@@ -217,8 +226,16 @@ class SegmentService:
             criteria_used=segment_query,
             customer_profiles=customer_profiles[:100],  # Limit response size
             metadata=metadata,
-            recommended_trigger=trigger_suggestions[0] if trigger_suggestions else None
+            recommended_trigger=trigger_suggestions[0] if trigger_suggestions else None,
+            comprehensive_summary=comprehensive_explainability  # Add full journey summary
         )
+        
+        print(f"\n✅ Segment created successfully!")
+        print(f"   Segment ID: {segment_id}")
+        print(f"   Total customers: {len(customer_profiles)}")
+        print(f"   Customers in response: {len(customer_profiles[:100])}")
+        print(f"   Trigger: {selected_trigger}")
+        print(f"   Manual filters: {additional_filters}")
         
         # Cache the segment
         self.segment_cache[segment_id] = {
@@ -318,7 +335,8 @@ class SegmentService:
     def preview_filter_impact(
         self, 
         coo_data: dict, 
-        new_filters: dict
+        new_filters: dict,
+        selected_trigger: Optional[str] = None
     ):
         """
         Preview the impact of additional filters on segment size/quality
@@ -326,6 +344,7 @@ class SegmentService:
         Args:
             coo_data: Campaign Objective Object as dict
             new_filters: Additional filters to apply (location, CLV, cart value, etc.)
+            selected_trigger: Optional trigger name to apply sensitivity filter
         
         Returns:
             FilterPreviewResponse with before/after metrics
@@ -335,10 +354,21 @@ class SegmentService:
         # Convert dict to COO
         coo = CampaignObjectiveObject(**coo_data)
         
-        # Get the base segment (AI-filtered only)
-        base_query = self.query_builder.build_segment_query(coo, limit=None)
+        # Get the base segment (AI-filtered + trigger filter if selected)
+        # CRITICAL: If a trigger was selected, apply its sensitivity filter here
+        uplift_scores = None
+        if selected_trigger:
+            uplift_scores = {selected_trigger: Config.DEFAULT_UPLIFT_THRESHOLD}
+            print(f"\n🎯 Preview with trigger filter: '{selected_trigger}' (threshold: {Config.DEFAULT_UPLIFT_THRESHOLD})")
+        
+        base_query = self.query_builder.build_segment_query(
+            coo, 
+            uplift_scores=uplift_scores,
+            limit=None
+        )
         base_data = self.bigquery_service.query(base_query)
         starting_size = len(base_data)
+        print(f"   Starting size (after trigger filter): {starting_size} customers")
         
         # Apply new filters to the DataFrame using reusable method
         filtered_data = self._apply_filters(base_data, new_filters)
@@ -392,10 +422,10 @@ class SegmentService:
         
         # Calculate demographic breakdown for filtered data
         demographic_breakdown = {}
-        if 'location_city' in filtered_data.columns and final_size > 0:
-            all_cities = filtered_data['location_city'].value_counts().to_dict()
-            demographic_breakdown['top_cities'] = {
-                str(k): int(v) for k, v in all_cities.items() 
+        if 'location_country' in filtered_data.columns and final_size > 0:
+            all_countries = filtered_data['location_country'].value_counts().to_dict()
+            demographic_breakdown['top_countries'] = {
+                str(k): int(v) for k, v in all_countries.items() 
                 if not (pd.isna(k) or pd.isna(v))
             }
         
@@ -584,14 +614,14 @@ class SegmentService:
             # This would need proper parsing in production
             common_categories = ['Electronics', 'Fashion', 'Home & Garden']
         
-        # Demographic breakdown - show ALL cities for accurate totals
+        # Demographic breakdown - show ALL countries for accurate totals
         demographic_breakdown = {}
-        if 'location_city' in customer_df.columns and len(customer_df) > 0:
-            # Get all cities, sorted by count (descending)
-            all_cities = customer_df['location_city'].value_counts().to_dict()
+        if 'location_country' in customer_df.columns and len(customer_df) > 0:
+            # Get all countries, sorted by count (descending)
+            all_countries = customer_df['location_country'].value_counts().to_dict()
             # Convert numpy types to Python types and handle NaN
-            demographic_breakdown['top_cities'] = {
-                str(k): int(v) for k, v in all_cities.items() 
+            demographic_breakdown['top_countries'] = {
+                str(k): int(v) for k, v in all_countries.items() 
                 if not (pd.isna(k) or pd.isna(v))
             }
         
@@ -743,6 +773,122 @@ class SegmentService:
             })
         
         return factors
+    
+    def _generate_comprehensive_summary(
+        self,
+        coo: CampaignObjectiveObject,
+        customer_data: pd.DataFrame,
+        trigger_suggestions: List[TriggerRecommendation],
+        selected_trigger: Optional[str],
+        additional_filters: Optional[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Generate comprehensive summary of the entire segment creation journey
+        Including: Campaign goal → AI filters → Trigger selection → Manual filters → Final segment
+        """
+        
+        # Get basic stats
+        avg_clv = customer_data['clv_score'].mean() if 'clv_score' in customer_data.columns and len(customer_data) > 0 else 0.7
+        avg_clv = float(avg_clv) if not pd.isna(avg_clv) else 0.7
+        
+        # Build filtering journey steps
+        filtering_steps = []
+        
+        # Step 1: Campaign Objective
+        filtering_steps.append({
+            'step': 'Campaign Objective',
+            'description': f"Goal: {coo.campaign_goal.replace('_', ' ').title()} campaign targeting {coo.target_behavior.replace('_', ' ')} behavior"
+        })
+        
+        # Step 2: AI Behavioral Filters
+        ai_filter_desc = []
+        if coo.target_behavior:
+            behavior_labels = {
+                'abandoned_cart': 'Abandoned cart in last 7 days',
+                'lapsed_customer': 'High churn risk customers (churn score > 60%)',
+                'high_engagement': 'High engagement customers (engagement score > 70%)',
+                'cross_sell': 'Recent product purchasers (last 30 days)',
+                'new_customer': 'New customers (acquired in last 7 days)',
+                'retention': 'At-risk retention (30-90 days since last purchase)',
+                'reactivation': 'Dormant customers (high churn probability)'
+            }
+            ai_filter_desc.append(behavior_labels.get(coo.target_behavior, f'{coo.target_behavior} behavior'))
+        
+        if coo.target_subgroup and "high_value" in coo.target_subgroup.lower():
+            ai_filter_desc.append('High CLV customers (top 25%, score ≥ 75%)')
+        
+        if coo.target_behavior == "abandoned_cart":
+            ai_filter_desc.append('Above-average cart value')
+        
+        if ai_filter_desc:
+            filtering_steps.append({
+                'step': 'AI Behavioral Filters',
+                'description': ' • ' + '\n • '.join(ai_filter_desc)
+            })
+        
+        # Step 3: Trigger Selection
+        if selected_trigger:
+            trigger_obj = next((t for t in trigger_suggestions if t.trigger_name == selected_trigger), None)
+            trigger_display = selected_trigger.replace('_', ' ').title()
+            if trigger_obj:
+                filtering_steps.append({
+                    'step': 'Trigger Selection',
+                    'description': f"Selected: {trigger_display}\nSensitivity threshold: 65%\nPredicted uplift: {int(trigger_obj.predicted_uplift * 100)}%"
+                })
+            else:
+                filtering_steps.append({
+                    'step': 'Trigger Selection',
+                    'description': f"Selected: {trigger_display}\nSensitivity threshold: 65%"
+                })
+        
+        # Step 4: Manual Refinements
+        if additional_filters and len(additional_filters) > 0:
+            manual_filter_desc = []
+            if 'location_country' in additional_filters:
+                manual_filter_desc.append(f"Country: {additional_filters['location_country']}")
+            if 'location_city' in additional_filters:
+                manual_filter_desc.append(f"City: {additional_filters['location_city']}")
+            if 'clv_min' in additional_filters:
+                clv_min_pct = int(float(additional_filters['clv_min']) * 100)
+                manual_filter_desc.append(f"Minimum CLV: {clv_min_pct}%")
+            if 'cart_value_min' in additional_filters:
+                cart_min = float(additional_filters['cart_value_min'])
+                manual_filter_desc.append(f"Minimum cart value: ${cart_min:.2f}")
+            
+            if manual_filter_desc:
+                filtering_steps.append({
+                    'step': 'Manual Refinements',
+                    'description': ' • ' + '\n • '.join(manual_filter_desc)
+                })
+        
+        # Final segment characteristics
+        final_characteristics = {
+            'total_customers': len(customer_data),
+            'avg_clv_score': round(avg_clv, 3),
+            'primary_location': None,
+            'filtering_steps': filtering_steps
+        }
+        
+        # Get primary location if available
+        if 'location_country' in customer_data.columns and len(customer_data) > 0:
+            top_country = customer_data['location_country'].mode()
+            if len(top_country) > 0 and not pd.isna(top_country.iloc[0]):
+                final_characteristics['primary_location'] = str(top_country.iloc[0])
+        
+        # Generate summary text
+        summary_text = f"This segment of {len(customer_data):,} customers was created through a {len(filtering_steps)}-step refinement process:\n\n"
+        
+        for i, step in enumerate(filtering_steps, 1):
+            summary_text += f"{i}. **{step['step']}**: {step['description']}\n"
+        
+        summary_text += f"\n**Final Result**: {len(customer_data):,} highly-targeted customers with an average CLV score of {int(avg_clv * 100)}%, optimized for maximum campaign impact."
+        
+        return {
+            'summary_text': summary_text,
+            'filtering_steps': filtering_steps,
+            'final_characteristics': final_characteristics,
+            'confidence_level': 'high' if len(customer_data) > 500 else 'moderate'
+        }
     
     def _get_feature_description(self, feature: str) -> str:
         """Get human-readable description of a feature"""

@@ -29,16 +29,39 @@ An AI-first Customer Data Platform designed for a fictional home furnishing reta
 - **Data Layer**: Google BigQuery (GCP)
 - **Backend**: Python (Flask), Pandas, NumPy
 - **AI/LLM**: Google Gemini 2.5 Flash via Vertex AI
-- **Frontend**: Vanilla HTML/CSS/JavaScript
+- **Frontend**: Vanilla HTML/CSS/JavaScript (Modular)
 - **Deployment**: Local development server
+
+### Application Pages
+
+The platform consists of three main applications:
+
+1. **📊 Overview Dashboard** (`index.html`)
+   - Landing page with key metrics and insights
+   - Real-time customer statistics from BigQuery
+   - Campaign opportunities identification
+   - Geographic and value segment distribution
+   - Data health monitoring
+
+2. **🎯 Campaign Segmentation** (`campaign-segmentation.html`)
+   - AI-powered campaign analysis and segmentation
+   - Natural language campaign input
+   - Multi-stage segment refinement workflow
+   - Trigger optimization and selection
+   - Export and activation capabilities
+
+3. **💬 Conversational Analytics** (`conversational-analytics.html`)
+   - *Coming Soon* - Natural language data queries
+   - Interactive exploration of customer data
+   - AI-generated visualizations and insights
 
 ### Key Components
 
 1. **Campaign Intent Interpreter** - Gemini-powered natural language processor
 2. **Causal Segmentation Engine** - Uplift score simulation for trigger optimization
 3. **BigQuery Data Layer** - Synthetic customer dataset with rich behavioral attributes
-4. **REST API** - Segment activation and analysis endpoints
-5. **Interactive UI** - Three-stage refinement workflow
+4. **REST API** - Segment activation, analysis, and overview endpoints
+5. **Modular UI** - Shared navigation and component architecture
 
 ## 📊 Data Model
 
@@ -213,30 +236,65 @@ new product launches to drive regional sales growth"
 
 ## 🎨 UI Workflow
 
-### Step 1: Campaign Input
+### Overview Dashboard (Landing Page)
+- **Key Metrics**: Total customers, abandoned carts (7d), avg CLV, at-risk customers
+- **Geographic Distribution**: Customer breakdown by country (interactive charts)
+- **Value Segments**: High/Medium/Low value customer distribution
+- **Campaign Opportunities**: AI-identified segments ready for targeting
+- **Behavioral Insights**: Recent activity patterns and top categories
+- **Data Health**: Real-time monitoring of data freshness and coverage
+
+### Campaign Segmentation Workflow
+
+#### Step 1: Campaign Input
 - Enter natural language campaign objective
 - AI interprets intent and extracts structured data
 
-### Step 2: Campaign Analysis
+#### Step 2: Campaign Analysis
 - View AI interpretation (Campaign Objective Object)
 - See full eligible segment with AI-applied filters
 - Review segment size, avg CLV, predicted uplift
 
-### Step 3: Refine Segment (Optional)
-- Review AI-applied filters
-- Add custom filters:
+#### Step 3: Select Trigger & Preview Impact
+- Choose from AI-ranked trigger recommendations
+- Preview segment impact (before/after trigger filtering)
+- Apply trigger filter to narrow to high-response customers
+
+#### Step 4: Refine Segment (Optional)
+- Review AI-applied filters and trigger filter
+- Add additional custom filters:
   - Location (country, city)
   - Customer value (CLV threshold)
   - Cart value (for abandoned cart campaigns)
 - Preview filter impact before applying
 
-### Step 4: Select Trigger & Activate
+#### Step 5: Activate Segment
 - Review final segment metrics
-- Choose from AI-ranked trigger recommendations
 - View explainability (why this segment?)
 - Create segment and export customer list
+- Integration options: JSON, CSV, or API endpoint
 
 ## 📡 API Endpoints
+
+### `GET /api/v1/overview/stats`
+Get overview dashboard statistics
+
+**Response**:
+```json
+{
+  "metrics": {
+    "total_customers": 10000,
+    "abandoned_carts_7d": 3483,
+    "avg_clv_score": 0.71,
+    "at_risk_customers": 3940
+  },
+  "geographic_distribution": {...},
+  "value_segments": {...},
+  "opportunities": [...],
+  "behavioral_insights": [...],
+  "data_health": {...}
+}
+```
 
 ### `POST /api/v1/campaigns/analyze`
 Analyze natural language campaign objective
@@ -315,25 +373,44 @@ ai_cdp/
 │   ├── app.py
 │   ├── config.py
 │   ├── models/
-│   │   ├── intent_interpreter.py
-│   │   ├── causal_engine.py
-│   │   └── query_builder.py
+│   │   ├── intent_interpreter.py    # Gemini campaign interpreter
+│   │   ├── causal_engine.py         # Uplift modeling
+│   │   └── query_builder.py         # Dynamic SQL generation
 │   ├── services/
-│   │   ├── bigquery_service.py
-│   │   └── segment_service.py
+│   │   ├── bigquery_service.py      # BigQuery client
+│   │   └── segment_service.py       # Segmentation logic
 │   └── api/
-│       ├── routes.py
-│       └── schemas.py
+│       ├── routes.py                # Campaign & segment endpoints
+│       ├── overview_routes.py       # Overview dashboard endpoints
+│       └── schemas.py               # Pydantic models
 ├── frontend/
-│   ├── index.html
+│   ├── index.html                   # Overview Dashboard (landing)
+│   ├── campaign-segmentation.html   # Campaign Segmentation app
+│   ├── conversational-analytics.html # Coming Soon page
 │   ├── css/
+│   │   ├── main.css                 # Global design system
+│   │   ├── overview.css             # Overview page styles
+│   │   ├── components.css           # Shared components
+│   │   ├── dashboard.css            # Dashboard widgets
+│   │   └── conversational-analytics.css
 │   └── js/
-│       └── app.js
+│       ├── app.js                   # Campaign Segmentation logic
+│       ├── overview.js              # Overview Dashboard logic
+│       ├── components/
+│       │   ├── Navigation.js        # Shared navigation
+│       │   ├── SegmentDashboard.js  # Segment metrics
+│       │   └── Explainability.js    # AI explainability
+│       ├── services/
+│       │   └── apiClient.js         # API communication
+│       └── utils/
+│           └── helpers.js           # Utility functions
 ├── scripts/
-│   ├── generate_data.py          # Initial data generation
-│   └── add_realtime_events.py    # Incremental event generation
+│   ├── generate_data.py             # Initial data generation
+│   ├── add_realtime_events.py       # Incremental event generation
+│   └── check_data_distribution.py   # Data validation utility
 ├── requirements.txt
-└── .env
+├── run.py                           # Backend startup script
+└── .env                             # Environment configuration
 ```
 
 ### Key Files

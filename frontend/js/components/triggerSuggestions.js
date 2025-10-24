@@ -25,10 +25,8 @@ export class TriggerSuggestionsComponent {
             this.container.appendChild(card);
         });
 
-        // Auto-select the first (best) trigger
-        if (triggers.length > 0) {
-            this.selectTrigger(triggers[0].trigger_name);
-        }
+        // Don't auto-select - user must explicitly click to select a trigger
+        // This makes it clear that selection is required
     }
 
     createTriggerCard(trigger, index) {

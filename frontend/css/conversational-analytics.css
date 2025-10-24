@@ -1,0 +1,97 @@
+/**
+ * Conversational Analytics - Coming Soon Page Styles
+ */
+
+.coming-soon-card {
+    max-width: 1000px;
+    margin: var(--spacing-3xl) auto;
+}
+
+.coming-soon-icon {
+    font-size: 6rem;
+    margin-bottom: var(--spacing-2xl);
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-xl);
+    margin-top: var(--spacing-2xl);
+}
+
+@media (max-width: 768px) {
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.feature-item {
+    padding: var(--spacing-2xl);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1.5px solid rgba(229, 231, 235, 0.8);
+    border-radius: var(--radius-xl);
+    text-align: center;
+    transition: all var(--transition-base);
+    box-shadow: var(--shadow-sm);
+}
+
+.feature-item:hover {
+    background: rgba(243, 232, 255, 0.3);
+    border-color: var(--primary-light);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-float);
+}
+
+.feature-icon {
+    font-size: 3.5rem;
+    margin-bottom: var(--spacing-lg);
+}
+
+.feature-item h3 {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    letter-spacing: -0.01em;
+}
+
+.feature-item p {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.6;
+}
+
+.example-questions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.example-question {
+    padding: var(--spacing-lg) var(--spacing-xl);
+    background: rgba(232, 240, 254, 0.4);
+    border-left: 4px solid var(--primary);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-base);
+    color: var(--text-primary);
+    text-align: left;
+    font-style: italic;
+    line-height: 1.6;
+    transition: all var(--transition-fast);
+}
+
+.example-question:hover {
+    background: rgba(232, 240, 254, 0.6);
+    transform: translateX(8px);
+    box-shadow: 0 2px 8px rgba(26, 115, 232, 0.15);
+}
+

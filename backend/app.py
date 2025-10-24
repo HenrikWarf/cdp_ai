@@ -18,6 +18,7 @@ load_dotenv()
 
 from backend.config import Config
 from backend.api.routes import api
+from backend.api.overview_routes import overview_bp
 
 
 def create_app():
@@ -50,6 +51,7 @@ def create_app():
     
     # Register blueprints
     app.register_blueprint(api)
+    app.register_blueprint(overview_bp, url_prefix='/api/v1/overview')
     
     # Root endpoint
     @app.route('/')

@@ -103,14 +103,27 @@ class ApiClient {
      * Preview filter impact on segment
      * POST /segments/preview-filters
      */
-    async previewFilters(campaignObjectiveObject, newFilters) {
+    async previewFilters(campaignObjectiveObject, newFilters, selectedTrigger = null) {
         return this.request('/segments/preview-filters', {
             method: 'POST',
             body: JSON.stringify({
                 campaign_objective_object: campaignObjectiveObject,
-                new_filters: newFilters
+                new_filters: newFilters,
+                selected_trigger: selectedTrigger
             })
         });
+    }
+
+    /**
+     * Get overview dashboard statistics
+     * GET /overview/stats
+     * @param {boolean} forceRefresh - If true, bypass cache and fetch fresh data
+     */
+    async getOverviewStats(forceRefresh = false) {
+        const params = forceRefresh ? '?refresh=true' : '';
+        const result = await this.request(`/overview/stats${params}`);
+        console.log('📡 API Response - geographic_distribution:', result.geographic_distribution);
+        return result;
     }
 
     /**

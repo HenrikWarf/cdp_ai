@@ -243,7 +243,8 @@ def preview_filter_impact():
                 "location_city": "New York",
                 "clv_min": 0.8,
                 "cart_value_min": 100.0
-            }
+            },
+            "selected_trigger": "discount" (optional)
         }
     
     Returns:
@@ -268,7 +269,8 @@ def preview_filter_impact():
         # Get the preview from the service
         preview = segment_service.preview_filter_impact(
             data.get('campaign_objective_object'),
-            data.get('new_filters', {})
+            data.get('new_filters', {}),
+            data.get('selected_trigger')  # Pass trigger to apply sensitivity filter
         )
         
         return jsonify(preview.model_dump()), 200
