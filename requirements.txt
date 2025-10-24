@@ -1,0 +1,30 @@
+# Core Web Framework
+Flask>=3.0.0
+Flask-CORS>=4.0.0
+waitress>=2.1.2  # Better than gunicorn for Windows
+
+# Google Cloud & BigQuery
+google-cloud-bigquery>=3.10.0
+google-cloud-bigquery-storage>=2.20.0
+db-dtypes>=1.1.0
+
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Machine Learning & Causal Inference
+scikit-learn>=1.3.0
+xgboost>=2.0.0
+# Note: causalml may have installation issues on Windows
+# We'll implement a simpler uplift model simulation if needed
+
+# LLM Integration - Google Gemini
+google-cloud-aiplatform>=1.38.0
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+
+# Development
+pytest>=7.4.0
+

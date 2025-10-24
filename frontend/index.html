@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherSegment AI - Home Furnishing Customer Segmentation</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="container">
+            <div class="logo">
+                <h1>AetherSegment <span class="ai-badge">AI</span></h1>
+                <p class="tagline">AI-Powered Customer Segmentation for Home Furnishing</p>
+            </div>
+            <nav>
+                <button class="nav-btn active" data-view="campaign">New Campaign</button>
+                <button class="nav-btn" data-view="segments">Segments</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="app-main">
+        <div class="container">
+            
+            <!-- Campaign Input Section -->
+            <section id="campaign-input-section" class="section">
+                <div class="section-header">
+                    <h2>Describe Your Campaign Objective</h2>
+                    <p>Enter your campaign goal in natural language, and our AI will create the perfect customer segment</p>
+                </div>
+
+                <div class="campaign-input-card">
+                    <div class="input-wrapper">
+                        <textarea 
+                            id="campaign-objective" 
+                            class="campaign-input"
+                            placeholder="Example: Increase conversion for abandoned carts by 20% within 48 hours with a personalized discount offer for high-value shoppers"
+                            rows="4"
+                        ></textarea>
+                        
+                        <div class="input-actions">
+                            <button id="analyze-btn" class="btn btn-primary">
+                                <span class="btn-text">Analyze Campaign</span>
+                                <span class="btn-loader" style="display: none;">
+                                    <span class="spinner"></span> Analyzing...
+                                </span>
+                            </button>
+                            <button id="clear-btn" class="btn btn-secondary">Clear</button>
+                        </div>
+                    </div>
+
+                    <div class="example-prompts">
+                        <p class="example-label">Example Campaigns:</p>
+                        <div class="example-chips">
+                            <button class="chip" data-example="cart">Abandoned Cart Recovery</button>
+                            <button class="chip" data-example="retention">Customer Retention</button>
+                            <button class="chip" data-example="upsell">Upsell Campaign</button>
+                            <button class="chip" data-example="winback">Win-Back Campaign</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 2: Campaign Analysis Results (Initially Hidden) -->
+            <section id="analysis-results-section" class="section" style="display: none;">
+                <div class="step-indicator">
+                    <span class="step-badge">Step 2</span>
+                    <h2>Campaign Analysis Complete</h2>
+                    <p>Review AI interpretation and initial segment</p>
+                </div>
+                
+                <!-- Campaign Objective Object -->
+                <div class="results-card">
+                    <h3>AI Campaign Interpretation</h3>
+                    <div id="coo-display" class="coo-display"></div>
+                </div>
+
+                <!-- Full Eligible Segment Overview -->
+                <div class="results-card dashboard-card">
+                    <h3>Full Eligible Segment (AI-Filtered)</h3>
+                    <p class="card-subtitle">These are all customers matching your campaign's core criteria</p>
+                    <div id="full-segment-dashboard" class="dashboard-content"></div>
+                    <div id="ai-filters-display" class="ai-filters-display"></div>
+                </div>
+
+                <!-- Action -->
+                <div class="action-bar">
+                    <button id="proceed-to-triggers-btn" class="btn btn-primary">
+                        Select Trigger
+                    </button>
+                    <button id="new-campaign-btn" class="btn btn-secondary">
+                        Start New Campaign
+                    </button>
+                </div>
+            </section>
+
+            <!-- Step 3: Select Trigger (Initially Hidden) -->
+            <section id="trigger-selection-section" class="section" style="display: none;">
+                <div class="step-indicator">
+                    <span class="step-badge">Step 3</span>
+                    <h2>Select Trigger & Preview Impact</h2>
+                    <p>Choose the best trigger for your segment</p>
+                </div>
+
+                <!-- Trigger Recommendations -->
+                <div class="results-card">
+                    <h3>Recommended Triggers</h3>
+                    <p class="card-subtitle">AI-ranked triggers optimized for your segment. Selecting a trigger will filter to customers most likely to respond.</p>
+                    <div id="trigger-suggestions" class="trigger-grid"></div>
+                </div>
+
+                <!-- Trigger Impact Preview -->
+                <div class="results-card" id="trigger-preview-card" style="display: none;">
+                    <h3>📊 Trigger Filter Impact</h3>
+                    <p class="card-subtitle">Segment narrowed to customers with high sensitivity to selected trigger</p>
+                    <div id="trigger-preview-content" class="filter-preview-content"></div>
+                </div>
+
+                <!-- Actions -->
+                <div class="action-bar">
+                    <button id="apply-trigger-btn" class="btn btn-primary" style="display: none;">
+                        Apply Trigger & Continue
+                    </button>
+                    <button id="skip-trigger-btn" class="btn btn-secondary">
+                        Skip Trigger Filter
+                    </button>
+                    <button id="back-to-analysis-btn-2" class="btn btn-outline">
+                        ← Back to Analysis
+                    </button>
+                </div>
+            </section>
+
+            <!-- Step 4: Refine Segment (Initially Hidden) -->
+            <section id="refine-segment-section" class="section" style="display: none;">
+                <div class="step-indicator">
+                    <span class="step-badge">Step 4</span>
+                    <h2>Refine Your Segment (Optional)</h2>
+                    <p>Add location, CLV, or other filters on top of trigger filtering</p>
+                </div>
+
+                <!-- Current Segment Overview -->
+                <div class="results-card dashboard-card">
+                    <h3>Current Segment (After Trigger Filter)</h3>
+                    <div id="trigger-filtered-dashboard" class="dashboard-content"></div>
+                </div>
+
+                <!-- Section 1: AI-Applied Filters -->
+                <div class="results-card">
+                    <h3>🤖 Filters Already Applied</h3>
+                    <p class="card-subtitle">Campaign AI filters + Trigger sensitivity filter</p>
+                    <div id="ai-filters-review" class="filters-review"></div>
+                </div>
+
+                <!-- Section 2: Add New Filters -->
+                <div class="results-card">
+                    <h3>➕ Add Additional Filters</h3>
+                    <p class="card-subtitle">Optional: Further narrow your segment with standard filters</p>
+                    
+                    <div class="filter-form">
+                        <!-- Location Filters -->
+                        <div class="filter-group">
+                            <h4>📍 Location</h4>
+                            <div class="filter-inputs">
+                            <div class="input-group">
+                                <label for="filter-country">Country</label>
+                                <select id="filter-country" class="filter-input">
+                                    <option value="">All Countries</option>
+                                    <option value="United States">United States</option>
+                                    <option value="United Kingdom">United Kingdom</option>
+                                    <option value="Canada">Canada</option>
+                                    <option value="Australia">Australia</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label for="filter-city">City</label>
+                                <select id="filter-city" class="filter-input">
+                                    <option value="">All Cities</option>
+                                    <!-- United States -->
+                                    <option value="New York">New York</option>
+                                    <option value="Los Angeles">Los Angeles</option>
+                                    <option value="Chicago">Chicago</option>
+                                    <option value="Houston">Houston</option>
+                                    <option value="Phoenix">Phoenix</option>
+                                    <option value="Seattle">Seattle</option>
+                                    <!-- United Kingdom -->
+                                    <option value="London">London</option>
+                                    <option value="Manchester">Manchester</option>
+                                    <option value="Birmingham">Birmingham</option>
+                                    <option value="Glasgow">Glasgow</option>
+                                    <option value="Edinburgh">Edinburgh</option>
+                                    <!-- Canada -->
+                                    <option value="Toronto">Toronto</option>
+                                    <option value="Vancouver">Vancouver</option>
+                                    <option value="Montreal">Montreal</option>
+                                    <option value="Calgary">Calgary</option>
+                                    <option value="Ottawa">Ottawa</option>
+                                    <!-- Australia -->
+                                    <option value="Sydney">Sydney</option>
+                                    <option value="Melbourne">Melbourne</option>
+                                    <option value="Brisbane">Brisbane</option>
+                                    <option value="Perth">Perth</option>
+                                    <option value="Adelaide">Adelaide</option>
+                                </select>
+                            </div>
+                            </div>
+                        </div>
+
+                        <!-- Value Filters -->
+                        <div class="filter-group">
+                            <h4>💰 Customer Value</h4>
+                            <div class="filter-inputs">
+                                <div class="input-group">
+                                    <label for="filter-clv-min">Minimum CLV Score (%)</label>
+                                    <input type="number" id="filter-clv-min" class="filter-input" min="0" max="100" step="5" placeholder="e.g., 80">
+                                    <span class="input-hint">Higher = more valuable customers</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cart Value Filters (for abandoned cart campaigns) -->
+                        <div class="filter-group" id="cart-value-filter-group" style="display: none;">
+                            <h4>🛒 Cart Value</h4>
+                            <div class="filter-inputs">
+                                <div class="input-group">
+                                    <label for="filter-cart-min">Minimum Cart Value ($)</label>
+                                    <input type="number" id="filter-cart-min" class="filter-input" min="0" step="10" placeholder="e.g., 100">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="preview-filters-btn" class="btn btn-secondary">
+                            Preview Filter Impact
+                        </button>
+                        <button id="clear-filters-btn" class="btn btn-outline">
+                            Clear All Filters
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Section 3: Filter Impact Preview -->
+                <div class="results-card" id="filter-preview-card" style="display: none;">
+                    <h3>📊 Filter Impact Preview</h3>
+                    <p class="card-subtitle">See how your filters affect segment size and quality</p>
+                    <div id="filter-preview-content" class="filter-preview-content"></div>
+                </div>
+
+                <!-- Actions -->
+                <div class="action-bar">
+                    <button id="apply-filters-btn" class="btn btn-primary" style="display: none;">
+                        Apply Filters & Continue
+                    </button>
+                    <button id="skip-filters-btn" class="btn btn-secondary">
+                        Skip to Activation
+                    </button>
+                    <button id="back-to-triggers-btn" class="btn btn-outline">
+                        ← Back to Trigger Selection
+                    </button>
+                </div>
+            </section>
+
+            <!-- Step 5: Activate Segment (Initially Hidden) -->
+            <section id="activate-segment-section" class="section" style="display: none;">
+                <div class="step-indicator">
+                    <span class="step-badge">Step 5</span>
+                    <h2>Activate Segment</h2>
+                    <p>Review final segment and create for activation</p>
+                </div>
+
+                <!-- Final Segment Overview -->
+                <div class="results-card dashboard-card">
+                    <h3>Final Segment Overview</h3>
+                    <div id="final-segment-dashboard" class="dashboard-content"></div>
+                </div>
+
+                <!-- Explainability -->
+                <div class="results-card">
+                    <h3>Why This Segment?</h3>
+                    <div id="explainability-section" class="explainability-content"></div>
+                </div>
+
+                <!-- Actions -->
+                <div class="action-bar">
+                    <button id="create-segment-btn" class="btn btn-success">
+                        Create Segment & Get Customers
+                    </button>
+                    <button id="back-to-refine-btn" class="btn btn-outline">
+                        ← Back to Refine
+                    </button>
+                </div>
+            </section>
+
+            <!-- Segment Details Section (After Creation) -->
+            <section id="segment-details-section" class="section" style="display: none;">
+                <div class="results-card">
+                    <div class="section-header">
+                        <h3>Segment Created Successfully</h3>
+                        <p id="segment-id-display" class="segment-id"></p>
+                    </div>
+
+                    <div class="segment-stats" id="segment-stats"></div>
+
+                    <div class="customer-list-container">
+                        <h4>Customer Profiles (Sample)</h4>
+                        <div id="customer-list" class="customer-list"></div>
+                    </div>
+
+                    <div class="export-options">
+                        <h4>Export & Integration</h4>
+                        <div class="export-buttons">
+                            <button id="export-json-btn" class="btn btn-secondary">Export as JSON</button>
+                            <button id="export-csv-btn" class="btn btn-secondary">Export as CSV</button>
+                            <button id="copy-api-btn" class="btn btn-secondary">Copy API Endpoint</button>
+                        </div>
+                        <div id="api-endpoint-display" class="api-endpoint"></div>
+                    </div>
+
+                    <div class="action-bar">
+                        <button id="another-campaign-btn" class="btn btn-primary">
+                            Create Another Campaign
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+        <div class="container">
+            <p>&copy; 2025 AetherSegment AI - Prototype Application</p>
+            <p class="footer-tech">Powered by LLM + Uplift Models + BigQuery</p>
+        </div>
+    </footer>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
+
