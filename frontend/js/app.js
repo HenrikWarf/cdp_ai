@@ -9,6 +9,8 @@ import { CooDisplayComponent } from './components/cooDisplay.js';
 import { TriggerSuggestionsComponent } from './components/triggerSuggestions.js';
 import { SegmentDashboardComponent } from './components/segmentDashboard.js';
 import { ExplainabilityComponent } from './components/explainability.js';
+import { CampaignTemplatesComponent } from './components/campaignTemplates.js';
+import { CampaignBuilderComponent } from './components/campaignBuilder.js';
 import {
     showToast,
     scrollToElement,
@@ -27,18 +29,21 @@ class AetherSegmentApp {
         this.triggerSuggestions = new TriggerSuggestionsComponent();
         this.segmentDashboard = new SegmentDashboardComponent();
         this.explainability = new ExplainabilityComponent();
+        this.campaignTemplates = new CampaignTemplatesComponent();
+        this.campaignBuilder = new CampaignBuilderComponent();
 
         // State
         this.currentCampaignObjective = null;
         this.currentAnalysis = null;
         this.currentSegment = null;
         this.selectedTrigger = null;  // NEW: Track selected trigger
+        this.currentSegmentMetadata = null;  // NEW: Track updated segment metadata after trigger selection
         this.appliedFilters = {};
+        this.currentCampaignMode = 'templates'; // Track which mode is active
 
         // Section elements
         this.campaignInputSection = document.getElementById('campaign-input-section');
         this.analysisResultsSection = document.getElementById('analysis-results-section');
-        this.triggerSelectionSection = document.getElementById('trigger-selection-section');
         this.refineSegmentSection = document.getElementById('refine-segment-section');
         this.activateSegmentSection = document.getElementById('activate-segment-section');
         this.segmentDetailsSection = document.getElementById('segment-details-section');
@@ -48,6 +53,9 @@ class AetherSegmentApp {
 
     init() {
         console.log('Initializing AetherSegment AI...');
+
+        // Initialize campaign templates and builder
+        this.initializeCampaignSelector();
 
         // Setup campaign input handler
         this.campaignInput.onAnalyze((objective) => {
@@ -69,30 +77,119 @@ class AetherSegmentApp {
         console.log('AetherSegment AI initialized successfully');
     }
 
+    initializeCampaignSelector() {
+        // Setup template selection callback
+        this.campaignTemplates.setOnTemplateSelect((objective, title) => {
+            this.handleTemplateSelection(objective, title);
+        });
+
+        // Setup builder generation callback
+        this.campaignBuilder.setOnCampaignGenerate((objective, title) => {
+            this.handleBuilderGeneration(objective, title);
+        });
+
+        // Setup mode toggle
+        this.setupModeToggle();
+    }
+
+    setupModeToggle() {
+        const templatesBtn = document.getElementById('mode-templates');
+        const builderBtn = document.getElementById('mode-builder');
+        const templatesContainer = document.getElementById('campaign-templates-container');
+        const builderContainer = document.getElementById('campaign-builder-container');
+
+        if (templatesBtn && builderBtn && templatesContainer && builderContainer) {
+            templatesBtn.addEventListener('click', () => {
+                this.switchMode('templates', templatesBtn, builderBtn, templatesContainer, builderContainer);
+            });
+
+            builderBtn.addEventListener('click', () => {
+                this.switchMode('builder', builderBtn, templatesBtn, builderContainer, templatesContainer);
+            });
+        }
+    }
+
+    switchMode(mode, activeBtn, inactiveBtn, showContainer, hideContainer) {
+        // Check if clicking the already active button
+        if (activeBtn.classList.contains('active')) {
+            // Deactivate - hide everything
+            activeBtn.classList.remove('active');
+            showContainer.style.display = 'none';
+            this.currentCampaignMode = null;
+            console.log(`Deactivated ${mode} mode`);
+            return;
+        }
+
+        this.currentCampaignMode = mode;
+
+        // Render content when first showing (lazy render)
+        if (mode === 'templates' && !showContainer.hasChildNodes()) {
+            this.campaignTemplates.render();
+        } else if (mode === 'builder' && !showContainer.hasChildNodes()) {
+            this.campaignBuilder.render();
+        }
+
+        // Update button states
+        activeBtn.classList.add('active');
+        inactiveBtn.classList.remove('active');
+
+        // Toggle containers
+        showContainer.style.display = 'block';
+        hideContainer.style.display = 'none';
+
+        console.log(`Switched to ${mode} mode`);
+    }
+
+    handleTemplateSelection(objective, title) {
+        console.log('Template selected:', title);
+        
+        // Populate the textarea
+        const textarea = document.getElementById('campaign-objective');
+        if (textarea) {
+            textarea.value = objective;
+        }
+
+        // Show toast confirmation
+        showToast(`Template "${title}" loaded! Click "Analyze Campaign" to continue.`, 'success');
+
+        // Scroll to textarea
+        setTimeout(() => {
+            const inputCard = document.querySelector('.campaign-input-card');
+            if (inputCard) {
+                scrollToElement(inputCard);
+            }
+        }, 100);
+    }
+
+    handleBuilderGeneration(objective, title) {
+        console.log('Campaign generated:', title);
+        
+        // Populate the textarea
+        const textarea = document.getElementById('campaign-objective');
+        if (textarea) {
+            textarea.value = objective;
+        }
+
+        // Show toast confirmation
+        showToast(`Campaign "${title}" generated! Click "Analyze Campaign" to continue.`, 'success');
+
+        // Scroll to textarea
+        setTimeout(() => {
+            const inputCard = document.querySelector('.campaign-input-card');
+            if (inputCard) {
+                scrollToElement(inputCard);
+            }
+        }, 100);
+    }
+
     setupActionButtons() {
-        // Step 2: Analysis Results buttons
-        const proceedToTriggersBtn = document.getElementById('proceed-to-triggers-btn');
-        if (proceedToTriggersBtn) {
-            proceedToTriggersBtn.addEventListener('click', () => this.showTriggerSelection());
+        // Step 2: Analysis Results buttons (go directly to refine segment)
+        const proceedToRefineBtn = document.getElementById('proceed-to-refine-btn');
+        if (proceedToRefineBtn) {
+            proceedToRefineBtn.addEventListener('click', () => this.showRefineSegment());
         }
 
-        // Step 3: Trigger Selection buttons
-        const applyTriggerBtn = document.getElementById('apply-trigger-btn');
-        if (applyTriggerBtn) {
-            applyTriggerBtn.addEventListener('click', () => this.applyTriggerAndContinue());
-        }
-
-        const skipTriggerBtn = document.getElementById('skip-trigger-btn');
-        if (skipTriggerBtn) {
-            skipTriggerBtn.addEventListener('click', () => this.showRefineSegment());
-        }
-
-        const backToAnalysisBtn2 = document.getElementById('back-to-analysis-btn-2');
-        if (backToAnalysisBtn2) {
-            backToAnalysisBtn2.addEventListener('click', () => this.showAnalysisResults());
-        }
-
-        // Step 4: Refine Segment buttons
+        // Step 3: Refine Segment buttons
         const previewFiltersBtn = document.getElementById('preview-filters-btn');
         if (previewFiltersBtn) {
             previewFiltersBtn.addEventListener('click', () => this.previewFilterImpact());
@@ -103,19 +200,14 @@ class AetherSegmentApp {
             clearFiltersBtn.addEventListener('click', () => this.clearFilters());
         }
 
-        const applyFiltersBtn = document.getElementById('apply-filters-btn');
-        if (applyFiltersBtn) {
-            applyFiltersBtn.addEventListener('click', () => this.applyFiltersAndContinue());
+        const proceedToActivateBtn = document.getElementById('proceed-to-activate-btn');
+        if (proceedToActivateBtn) {
+            proceedToActivateBtn.addEventListener('click', () => this.showActivateSegment());
         }
 
-        const skipFiltersBtn = document.getElementById('skip-filters-btn');
-        if (skipFiltersBtn) {
-            skipFiltersBtn.addEventListener('click', () => this.showActivateSegment());
-        }
-
-        const backToTriggersBtn = document.getElementById('back-to-triggers-btn');
-        if (backToTriggersBtn) {
-            backToTriggersBtn.addEventListener('click', () => this.showTriggerSelection());
+        const backToAnalysisBtnRefine = document.getElementById('back-to-analysis-btn-refine');
+        if (backToAnalysisBtnRefine) {
+            backToAnalysisBtnRefine.addEventListener('click', () => this.showAnalysisResults());
         }
 
         // Step 5: Activate Segment buttons
@@ -209,17 +301,38 @@ class AetherSegmentApp {
         }
     }
 
-    displayAnalysisResults(analysis) {
+    async displayAnalysisResults(analysis) {
         // Display Campaign Objective Object
         this.cooDisplay.render(analysis.campaign_objective_object);
 
-        // Display Full Segment Dashboard in Step 2
+        // Display Trigger Selection (all options with recommended one pre-selected)
+        if (analysis.trigger_suggestions && analysis.recommended_trigger) {
+            this.displayTriggerSelection(analysis.trigger_suggestions, analysis.recommended_trigger);
+            // Auto-select the recommended trigger
+            this.selectedTrigger = {
+                trigger_name: analysis.recommended_trigger.trigger_name,
+                predicted_uplift: analysis.recommended_trigger.predicted_uplift,
+                confidence_score: analysis.recommended_trigger.confidence_score,
+                filteredSize: analysis.segment_preview.estimated_size
+            };
+            console.log('🎯 Auto-selected recommended trigger:', this.selectedTrigger.trigger_name);
+            console.log(`   📊 Predicted Uplift: ${Math.round(this.selectedTrigger.predicted_uplift * 100)}%`);
+            console.log(`   🔒 Confidence: ${Math.round(this.selectedTrigger.confidence_score * 100)}%`);
+        }
+
+        // Initialize currentSegmentMetadata with the full unfiltered segment
+        this.currentSegmentMetadata = {
+            ...analysis.segment_preview
+        };
+
+        // Display Full Segment Dashboard in Step 2 (WITHOUT demographics/categories)
         const fullSegmentDashboard = document.getElementById('full-segment-dashboard');
         if (fullSegmentDashboard) {
             this.segmentDashboard.render(
-                analysis.segment_preview,
+                this.currentSegmentMetadata,
                 analysis.campaign_objective_object,
-                fullSegmentDashboard
+                fullSegmentDashboard,
+                false  // Don't show demographics in step 2
             );
         }
 
@@ -237,6 +350,205 @@ class AetherSegmentApp {
 
         // Scroll to results
         setTimeout(() => scrollToElement(this.analysisResultsSection), 100);
+
+        // AUTOMATICALLY APPLY THE RECOMMENDED TRIGGER
+        // This updates the segment with the trigger filter
+        if (this.selectedTrigger) {
+            console.log('🎯 Auto-applying recommended trigger:', this.selectedTrigger.trigger_name);
+            await this.updateSegmentWithTrigger();
+        }
+    }
+
+    displayTriggerSelection(triggers, recommendedTrigger) {
+        const triggerContainer = document.getElementById('trigger-selection-container');
+        if (!triggerContainer) return;
+
+        const html = `
+            <div class="trigger-options">
+                <!-- No Trigger Option -->
+                <div class="trigger-option no-trigger" data-trigger="none">
+                    <div class="trigger-option-content">
+                        <div class="trigger-option-name">❌ No Trigger Filter</div>
+                        <div class="trigger-option-stats">
+                            <span>Use all eligible customers without trigger filtering</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${triggers.map((trigger, index) => `
+                    <div class="trigger-option ${trigger.trigger_name === recommendedTrigger.trigger_name ? 'selected' : ''}" 
+                         data-trigger="${trigger.trigger_name}"
+                         data-uplift="${trigger.predicted_uplift}"
+                         data-confidence="${trigger.confidence_score}">
+                        <div class="trigger-option-content">
+                            <div class="trigger-option-name">
+                                ${trigger.trigger_name}
+                                ${trigger.trigger_name === recommendedTrigger.trigger_name ? '<span class="badge badge-success" style="margin-left: 8px;">Recommended</span>' : ''}
+                            </div>
+                            <div class="trigger-option-stats">
+                                <div class="trigger-option-stat">
+                                    <span>Uplift:</span>
+                                    <strong>${Math.round(trigger.predicted_uplift * 100)}%</strong>
+                                </div>
+                                <div class="trigger-option-stat">
+                                    <span>Confidence:</span>
+                                    <strong>${Math.round(trigger.confidence_score * 100)}%</strong>
+                                </div>
+                            </div>
+                        </div>
+                        ${index === 0 ? '<span class="trigger-icon">🎯</span>' : ''}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        triggerContainer.innerHTML = html;
+
+        // Add click handlers
+        const options = triggerContainer.querySelectorAll('.trigger-option');
+        options.forEach(option => {
+            option.addEventListener('click', () => {
+                this.handleTriggerOptionClick(option);
+            });
+        });
+    }
+
+    async handleTriggerOptionClick(option) {
+        const triggerName = option.dataset.trigger;
+        
+        console.log('🖱️ User clicked trigger option:', triggerName);
+        
+        // Update UI selection
+        const allOptions = document.querySelectorAll('.trigger-option');
+        allOptions.forEach(opt => opt.classList.remove('selected'));
+        option.classList.add('selected');
+
+        // Update selected trigger
+        if (triggerName === 'none') {
+            console.log('❌ No trigger selected - will show full segment');
+            this.selectedTrigger = null;
+        } else {
+            this.selectedTrigger = {
+                trigger_name: triggerName,
+                predicted_uplift: parseFloat(option.dataset.uplift),
+                confidence_score: parseFloat(option.dataset.confidence),
+                filteredSize: null // Will be fetched
+            };
+            console.log('✅ Selected trigger:', this.selectedTrigger);
+            console.log(`   📊 Uplift: ${Math.round(this.selectedTrigger.predicted_uplift * 100)}%`);
+            console.log(`   🎯 Confidence: ${Math.round(this.selectedTrigger.confidence_score * 100)}%`);
+        }
+
+        // Fetch and update segment stats
+        await this.updateSegmentWithTrigger();
+    }
+
+    async updateSegmentWithTrigger() {
+        try {
+            console.log('📊 Updating segment with trigger:', this.selectedTrigger ? this.selectedTrigger.trigger_name : 'none');
+            
+            showToast('Updating segment...', 'info');
+
+            // Call backend to get segment with selected trigger
+            const preview = await apiClient.previewFilters(
+                this.currentAnalysis.campaign_objective_object,
+                {}, // No manual filters yet
+                this.selectedTrigger ? this.selectedTrigger.trigger_name : null
+            );
+
+            console.log('✅ Received preview from backend:', {
+                final_size: preview.final_size,
+                final_avg_clv: preview.final_avg_clv,
+                final_avg_cart_value: preview.final_avg_cart_value,
+                trigger: this.selectedTrigger ? this.selectedTrigger.trigger_name : 'none'
+            });
+
+            // Calculate predicted uplift and ROI based on selected trigger
+            let predicted_uplift = 0;
+            let predicted_roi = '3-5x'; // Default
+            
+            if (this.selectedTrigger) {
+                predicted_uplift = this.selectedTrigger.predicted_uplift;
+                // Calculate ROI based on uplift and confidence
+                const uplift = this.selectedTrigger.predicted_uplift;
+                const confidence = this.selectedTrigger.confidence_score;
+                
+                // ROI calculation: Higher uplift + higher confidence = better ROI
+                const roi_score = (uplift * confidence) * 100; // 0-100 scale
+                
+                if (roi_score >= 70) {
+                    predicted_roi = '5-8x';
+                } else if (roi_score >= 60) {
+                    predicted_roi = '4-6x';
+                } else if (roi_score >= 50) {
+                    predicted_roi = '3-5x';
+                } else if (roi_score >= 40) {
+                    predicted_roi = '2-4x';
+                } else {
+                    predicted_roi = '1-3x';
+                }
+            } else {
+                // No trigger selected - use base prediction from analysis
+                predicted_uplift = this.currentAnalysis.segment_preview.predicted_uplift || 0;
+                predicted_roi = this.currentAnalysis.segment_preview.predicted_roi || '3-5x';
+            }
+
+            // Create updated metadata and STORE IT
+            this.currentSegmentMetadata = {
+                ...this.currentAnalysis.segment_preview,
+                estimated_size: preview.final_size,
+                avg_clv_score: preview.final_avg_clv,
+                avg_cart_value: preview.final_avg_cart_value,
+                predicted_uplift: predicted_uplift,
+                predicted_roi: predicted_roi
+            };
+
+            console.log('💾 Updated metadata:', {
+                size: this.currentSegmentMetadata.estimated_size,
+                clv: this.currentSegmentMetadata.avg_clv_score,
+                uplift: `${Math.round(predicted_uplift * 100)}%`,
+                roi: predicted_roi
+            });
+
+            // Update segment dashboard
+            const fullSegmentDashboard = document.getElementById('full-segment-dashboard');
+            if (fullSegmentDashboard) {
+                this.segmentDashboard.render(
+                    this.currentSegmentMetadata,
+                    this.currentAnalysis.campaign_objective_object,
+                    fullSegmentDashboard,
+                    false
+                );
+            }
+
+            // Update subtitle with trigger and uplift info
+            const subtitle = document.getElementById('segment-subtitle');
+            if (subtitle) {
+                if (this.selectedTrigger) {
+                    const upliftPercent = Math.round(this.selectedTrigger.predicted_uplift * 100);
+                    const confidencePercent = Math.round(this.selectedTrigger.confidence_score * 100);
+                    subtitle.innerHTML = `
+                        Filtered to customers highly responsive to <strong>${this.selectedTrigger.trigger_name}</strong>
+                        <span style="color: var(--success-color); margin-left: 12px;">
+                            📈 Predicted Uplift: <strong>${upliftPercent}%</strong>
+                        </span>
+                        <span style="color: var(--primary-color); margin-left: 12px;">
+                            🎯 Confidence: <strong>${confidencePercent}%</strong>
+                        </span>
+                    `;
+                } else {
+                    subtitle.textContent = 'These customers match your campaign criteria';
+                }
+            }
+
+            // Update AI filters display
+            this.displayAIFilters(this.currentAnalysis.segment_preview.ai_filters || []);
+
+            showToast(`Segment updated: ${preview.final_size.toLocaleString()} customers`, 'success');
+        } catch (error) {
+            console.error('❌ Failed to update segment:', error);
+            showToast('Failed to update segment', 'error');
+        }
     }
 
     displayAIFilters(aiFilters) {
@@ -254,12 +566,11 @@ class AetherSegmentApp {
             `).join('');
         }
         
-        // Show trigger filter if applied
-        if (this.currentAnalysis?.segment_preview?.trigger_applied) {
-            const trigger = this.currentAnalysis.segment_preview.trigger_applied;
+        // Show trigger filter if applied (from selectedTrigger)
+        if (this.selectedTrigger) {
             html += `
                 <div class="filter-badge ai-filter" style="border-left-color: var(--success-color);">
-                    <strong>🎯 Trigger Filter:</strong> ${trigger.name.replace('_', ' ')} (${Math.round(trigger.uplift * 100)}% predicted uplift)
+                    <strong>🎯 Trigger Filter:</strong> ${this.selectedTrigger.trigger_name.replace('_', ' ')} (${Math.round(this.selectedTrigger.predicted_uplift * 100)}% predicted uplift)
                 </div>
             `;
         }
@@ -275,71 +586,103 @@ class AetherSegmentApp {
     showAnalysisResults() {
         this.campaignInputSection.style.display = 'none';
         this.analysisResultsSection.style.display = 'block';
-        this.triggerSelectionSection.style.display = 'none';
         this.refineSegmentSection.style.display = 'none';
         this.activateSegmentSection.style.display = 'none';
         this.segmentDetailsSection.style.display = 'none';
     }
 
-    showTriggerSelection() {
-        // Render triggers in Step 3
-        if (this.currentAnalysis) {
-            this.triggerSuggestions.render(this.currentAnalysis.trigger_suggestions);
-        }
-
-        this.campaignInputSection.style.display = 'none';
-        this.analysisResultsSection.style.display = 'none';
-        this.triggerSelectionSection.style.display = 'block';
-        this.refineSegmentSection.style.display = 'none';
-        this.activateSegmentSection.style.display = 'none';
-        this.segmentDetailsSection.style.display = 'none';
-        setTimeout(() => scrollToElement(this.triggerSelectionSection), 100);
-    }
+    // REMOVED: showTriggerSelection() - triggers are now in Step 2 (Analysis page)
 
     showRefineSegment() {
         // Render AI filters review
         if (this.currentAnalysis) {
             this.displayAIFilters(this.currentAnalysis.segment_preview.ai_filters);
             
-            // Show current segment after trigger filter
+            // Show current segment after trigger filter - USE UPDATED METADATA
             const triggerFilteredDashboard = document.getElementById('trigger-filtered-dashboard');
-            if (triggerFilteredDashboard) {
+            if (triggerFilteredDashboard && this.currentSegmentMetadata) {
                 this.segmentDashboard.render(
-                    this.currentAnalysis.segment_preview,
+                    this.currentSegmentMetadata,  // Use updated metadata from trigger selection
                     this.currentAnalysis.campaign_objective_object,
-                    triggerFilteredDashboard
+                    triggerFilteredDashboard,
+                    false  // Compact mode
                 );
             }
         }
 
         this.campaignInputSection.style.display = 'none';
         this.analysisResultsSection.style.display = 'none';
-        this.triggerSelectionSection.style.display = 'none';
         this.refineSegmentSection.style.display = 'block';
         this.activateSegmentSection.style.display = 'none';
         this.segmentDetailsSection.style.display = 'none';
         setTimeout(() => scrollToElement(this.refineSegmentSection), 100);
     }
 
-    showActivateSegment() {
-        // Render final overview and explainability in Step 5
-        if (this.currentAnalysis) {
-            this.explainability.render(this.currentAnalysis.explainability);
-
-            // Display final segment overview
-            const finalDashboard = document.getElementById('final-segment-dashboard');
-            if (finalDashboard) {
-                this.segmentDashboard.render(
-                    this.currentAnalysis.segment_preview,
+    async showActivateSegment() {
+        // Apply manual filters to get final segment data
+        if (this.currentAnalysis && this.appliedFilters && Object.keys(this.appliedFilters).length > 0) {
+            try {
+                console.log('📋 Applying manual filters before activation:', this.appliedFilters);
+                
+                // Fetch final segment with manual filters + trigger
+                const preview = await apiClient.previewFilters(
                     this.currentAnalysis.campaign_objective_object,
-                    finalDashboard
+                    this.appliedFilters,
+                    this.selectedTrigger ? this.selectedTrigger.trigger_name : null
+                );
+                
+                console.log('✅ Final segment with filters:', {
+                    size: preview.final_size,
+                    clv: preview.final_avg_clv,
+                    filters: Object.keys(this.appliedFilters)
+                });
+
+                // Calculate predicted uplift and ROI
+                let predicted_uplift = 0;
+                let predicted_roi = '3-5x';
+                
+                if (this.selectedTrigger) {
+                    predicted_uplift = this.selectedTrigger.predicted_uplift;
+                    const roi_score = (this.selectedTrigger.predicted_uplift * this.selectedTrigger.confidence_score) * 100;
+                    
+                    if (roi_score >= 70) predicted_roi = '5-8x';
+                    else if (roi_score >= 60) predicted_roi = '4-6x';
+                    else if (roi_score >= 50) predicted_roi = '3-5x';
+                    else if (roi_score >= 40) predicted_roi = '2-4x';
+                    else predicted_roi = '1-3x';
+                }
+
+                // Update current metadata with filtered results
+                this.currentSegmentMetadata = {
+                    ...this.currentSegmentMetadata,
+                    estimated_size: preview.final_size,
+                    avg_clv_score: preview.final_avg_clv,
+                    avg_cart_value: preview.final_avg_cart_value,
+                    predicted_uplift: predicted_uplift,
+                    predicted_roi: predicted_roi
+                };
+            } catch (error) {
+                console.error('❌ Failed to apply filters:', error);
+                showToast('Failed to apply filters', 'error');
+            }
+        }
+
+        // Render final overview in Step 4
+        if (this.currentAnalysis) {
+            // Display final segment overview with applied filters
+            const finalDashboard = document.getElementById('final-segment-dashboard');
+            if (finalDashboard && this.currentSegmentMetadata) {
+                this.segmentDashboard.render(
+                    this.currentSegmentMetadata,  // Use updated metadata with filters
+                    this.currentAnalysis.campaign_objective_object,
+                    finalDashboard,
+                    false  // Don't show demographics/product categories
                 );
             }
         }
 
         this.campaignInputSection.style.display = 'none';
         this.analysisResultsSection.style.display = 'none';
-        this.triggerSelectionSection.style.display = 'none';
         this.refineSegmentSection.style.display = 'none';
         this.activateSegmentSection.style.display = 'block';
         this.segmentDetailsSection.style.display = 'none';
@@ -486,12 +829,45 @@ class AetherSegmentApp {
                 selectedTrigger  // Pass the selected trigger so backend applies trigger filter
             );
 
+            // Update the current segment dashboard with filtered data
+            const triggerFilteredDashboard = document.getElementById('trigger-filtered-dashboard');
+            if (triggerFilteredDashboard) {
+                // Calculate predicted uplift and ROI
+                let predicted_uplift = 0;
+                let predicted_roi = '3-5x';
+                
+                if (this.selectedTrigger) {
+                    predicted_uplift = this.selectedTrigger.predicted_uplift;
+                    const roi_score = (this.selectedTrigger.predicted_uplift * this.selectedTrigger.confidence_score) * 100;
+                    
+                    if (roi_score >= 70) predicted_roi = '5-8x';
+                    else if (roi_score >= 60) predicted_roi = '4-6x';
+                    else if (roi_score >= 50) predicted_roi = '3-5x';
+                    else if (roi_score >= 40) predicted_roi = '2-4x';
+                    else predicted_roi = '1-3x';
+                }
+
+                // Update metadata with filtered values
+                const filteredMetadata = {
+                    ...this.currentSegmentMetadata,
+                    estimated_size: preview.final_size,
+                    avg_clv_score: preview.final_avg_clv,
+                    avg_cart_value: preview.final_avg_cart_value,
+                    predicted_uplift: predicted_uplift,
+                    predicted_roi: predicted_roi
+                };
+
+                // Re-render the dashboard with updated values
+                this.segmentDashboard.render(
+                    filteredMetadata,
+                    this.currentAnalysis.campaign_objective_object,
+                    triggerFilteredDashboard,
+                    false
+                );
+            }
+
             this.displayFilterPreview(preview);
             this.appliedFilters = filters;
-
-            // Show apply button
-            const applyBtn = document.getElementById('apply-filters-btn');
-            if (applyBtn) applyBtn.style.display = 'inline-block';
 
             showToast('Filter preview updated', 'success');
         } catch (error) {
@@ -532,6 +908,11 @@ class AetherSegmentApp {
                 <div class="preview-metric before">
                     <div class="metric-label">Avg CLV</div>
                     <div class="metric-value">${(preview.final_avg_clv * 100).toFixed(0)}%</div>
+                    ${preview.clv_interpretation ? `
+                        <div class="metric-detail" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                            ${preview.clv_interpretation.tier_label} • ${preview.clv_interpretation.percentile}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
 
@@ -634,58 +1015,11 @@ class AetherSegmentApp {
         const previewCard = document.getElementById('filter-preview-card');
         if (previewCard) previewCard.style.display = 'none';
 
-        const applyBtn = document.getElementById('apply-filters-btn');
-        if (applyBtn) applyBtn.style.display = 'none';
-
         this.appliedFilters = {};
 
         showToast('Filters cleared', 'info');
     }
 
-    async applyFiltersAndContinue() {
-        if (Object.keys(this.appliedFilters).length === 0) {
-            showToast('No filters to apply. Use "Skip to Trigger Selection" instead.', 'warning');
-            return;
-        }
-
-        const applyBtn = document.getElementById('apply-filters-btn');
-        const originalText = applyBtn.innerHTML;
-        applyBtn.innerHTML = '<span class="spinner"></span> Applying...';
-        applyBtn.disabled = true;
-
-        try {
-            // CRITICAL: Pass selected trigger so preview includes trigger sensitivity filter
-            const selectedTrigger = this.selectedTrigger ? this.selectedTrigger.trigger_name : null;
-            
-            // Re-fetch segment preview with applied filters AND trigger filter
-            const preview = await apiClient.previewFilters(
-                this.currentAnalysis.campaign_objective_object,
-                this.appliedFilters,
-                selectedTrigger  // Must match what's passed to createSegment
-            );
-
-            // Update the segment_preview in currentAnalysis with filtered data
-            this.currentAnalysis.segment_preview.estimated_size = preview.final_size;
-            this.currentAnalysis.segment_preview.avg_clv_score = preview.final_avg_clv;
-            if (preview.final_avg_cart_value !== null) {
-                this.currentAnalysis.segment_preview.avg_cart_value = preview.final_avg_cart_value;
-            }
-            
-            // Update demographic breakdown to reflect filtered locations
-            if (preview.demographic_breakdown) {
-                this.currentAnalysis.segment_preview.demographic_breakdown = preview.demographic_breakdown;
-            }
-
-            showToast(`Filters applied! Segment refined to ${preview.final_size.toLocaleString()} customers`, 'success');
-            this.showActivateSegment();
-        } catch (error) {
-            console.error('Failed to apply filters:', error);
-            showToast(`Failed to apply filters: ${error.message}`, 'error');
-        } finally {
-            applyBtn.innerHTML = originalText;
-            applyBtn.disabled = false;
-        }
-    }
 
     async createSegment() {
         if (!this.currentCampaignObjective) {
@@ -784,7 +1118,7 @@ class AetherSegmentApp {
         this.campaignInputSection.style.display = 'none';
         this.analysisResultsSection.style.display = 'none';
         this.refineSegmentSection.style.display = 'none';
-        this.triggerSelectionSection.style.display = 'none';
+        this.activateSegmentSection.style.display = 'none';
         this.segmentDetailsSection.style.display = 'block';
 
         // Scroll to segment details
@@ -850,7 +1184,7 @@ class AetherSegmentApp {
                 <div class="result-content">
                     <div class="result-title">Final Result</div>
                     <div class="result-description">
-                        ${summary.final_characteristics.total_customers.toLocaleString()} highly-targeted customers with an average CLV score of ${Math.round(summary.final_characteristics.avg_clv_score * 100)}%, optimized for maximum campaign impact.
+                        ${summary.final_characteristics.total_customers.toLocaleString()} highly-targeted customers with an average CLV score of ${Math.round(summary.final_characteristics.avg_clv_score * 100)}%${summary.final_characteristics.clv_interpretation ? ` (${summary.final_characteristics.clv_interpretation.tier_label})` : ''}, optimized for maximum campaign impact.
                     </div>
                 </div>
             </div>
@@ -876,11 +1210,30 @@ class AetherSegmentApp {
             `;
         }
 
+        // Build product affinity display
+        let productAffinity = '';
+        if (customer.favorite_category || customer.price_tier_preference) {
+            productAffinity = '<div class="customer-affinity">';
+            if (customer.favorite_category) {
+                productAffinity += `<span class="affinity-tag">🏠 ${customer.favorite_category}</span>`;
+            }
+            if (customer.secondary_category) {
+                productAffinity += `<span class="affinity-tag secondary">📦 ${customer.secondary_category}</span>`;
+            }
+            if (customer.price_tier_preference) {
+                const tierEmoji = customer.price_tier_preference === 'premium' ? '💎' : 
+                                 customer.price_tier_preference === 'mid' ? '⭐' : '💰';
+                productAffinity += `<span class="affinity-tag tier">${tierEmoji} ${customer.price_tier_preference}</span>`;
+            }
+            productAffinity += '</div>';
+        }
+        
         card.innerHTML = `
             <div class="customer-header">
                 <div class="customer-name">${customer.first_name}</div>
                 <div class="customer-score">CLV: ${Math.round(customer.clv_score * 100)}%</div>
             </div>
+            ${productAffinity}
             <div class="customer-details">
                 <div class="customer-detail">
                     <strong>ID:</strong> ${customer.customer_id}
@@ -962,7 +1315,6 @@ class AetherSegmentApp {
         // Show campaign input, hide all other sections
         this.campaignInputSection.style.display = 'block';
         this.analysisResultsSection.style.display = 'none';
-        this.triggerSelectionSection.style.display = 'none';
         this.refineSegmentSection.style.display = 'none';
         this.activateSegmentSection.style.display = 'none';
         this.segmentDetailsSection.style.display = 'none';

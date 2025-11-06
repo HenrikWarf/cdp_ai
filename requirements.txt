@@ -3,6 +3,10 @@ Flask>=3.0.0
 Flask-CORS>=4.0.0
 waitress>=2.1.2  # Better than gunicorn for Windows
 
+# FastAPI for Chat Agent
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
 # Google Cloud & BigQuery
 google-cloud-bigquery>=3.10.0
 google-cloud-bigquery-storage>=2.20.0
@@ -20,6 +24,8 @@ xgboost>=2.0.0
 
 # LLM Integration - Google Gemini
 google-cloud-aiplatform>=1.38.0
+google-adk>=1.0.0
+ag-ui-adk>=0.1.0
 
 # Utilities
 python-dotenv>=1.0.0

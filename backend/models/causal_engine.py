@@ -161,55 +161,75 @@ class CausalSegmentationEngine:
         trigger_config = {
             'discount': {
                 'score_col': 'discount_sensitivity_score',
-                'base_effectiveness': 0.72,
-                'variance': 0.15
+                'base_effectiveness': 0.85,  # Strong value-based trigger
+                'variance': 0.15,
+                'weight_sensitivity': 0.85,  # Highly dependent on customer sensitivity
+                'weight_base': 0.15
             },
             'personalized_discount_offer': {
                 'score_col': 'discount_sensitivity_score',
-                'base_effectiveness': 0.75,
-                'variance': 0.12
+                'base_effectiveness': 0.88,  # Personalization adds effectiveness
+                'variance': 0.12,
+                'weight_sensitivity': 0.80,
+                'weight_base': 0.20
             },
             'free_shipping': {
                 'score_col': 'free_shipping_sensitivity_score',
-                'base_effectiveness': 0.68,
-                'variance': 0.14
+                'base_effectiveness': 0.72,  # Different customer segment responds
+                'variance': 0.14,
+                'weight_sensitivity': 0.75,
+                'weight_base': 0.25
             },
             'free_expedited_shipping': {
                 'score_col': 'free_shipping_sensitivity_score',
-                'base_effectiveness': 0.65,
-                'variance': 0.16
+                'base_effectiveness': 0.68,
+                'variance': 0.16,
+                'weight_sensitivity': 0.75,
+                'weight_base': 0.25
             },
             'scarcity': {
                 'score_col': 'discount_sensitivity_score',
-                'base_effectiveness': 0.60,
-                'variance': 0.18
+                'base_effectiveness': 0.65,  # Psychological trigger - less predictable
+                'variance': 0.22,
+                'weight_sensitivity': 0.60,
+                'weight_base': 0.40
             },
             'exclusivity': {
                 'score_col': 'exclusivity_seeker_flag',
-                'base_effectiveness': 0.58,
-                'variance': 0.20
+                'base_effectiveness': 0.62,  # Niche audience
+                'variance': 0.25,
+                'weight_sensitivity': 0.90,  # Very dependent on customer type
+                'weight_base': 0.10
             },
             'social_proof': {
                 'score_col': 'social_proof_affinity',
-                'base_effectiveness': 0.55,
-                'variance': 0.17
+                'base_effectiveness': 0.58,  # Context-dependent
+                'variance': 0.20,
+                'weight_sensitivity': 0.70,
+                'weight_base': 0.30
             },
             'bundling': {
                 'score_col': 'discount_sensitivity_score',
                 'base_effectiveness': 0.63,
-                'variance': 0.15
+                'variance': 0.15,
+                'weight_sensitivity': 0.70,
+                'weight_base': 0.30
             },
             'cashback': {
                 'score_col': 'discount_sensitivity_score',
                 'base_effectiveness': 0.66,
-                'variance': 0.14
+                'variance': 0.14,
+                'weight_sensitivity': 0.75,
+                'weight_base': 0.25
             }
         }
         
         config = trigger_config.get(trigger_type, {
             'score_col': 'discount_sensitivity_score',
             'base_effectiveness': 0.55,
-            'variance': 0.18
+            'variance': 0.18,
+            'weight_sensitivity': 0.70,
+            'weight_base': 0.30
         })
         
         # Get base sensitivity score
@@ -234,12 +254,15 @@ class CausalSegmentationEngine:
         # Apply trigger-specific effectiveness multiplier
         base_effectiveness = config['base_effectiveness']
         variance = config['variance']
+        weight_sensitivity = config['weight_sensitivity']
+        weight_base = config['weight_base']
         
-        # Weighted combination: customer sensitivity (70%) + base trigger effectiveness (30%)
-        weighted_score = (base_score * 0.7) + (base_effectiveness * 0.3)
+        # Weighted combination: customer sensitivity + base trigger effectiveness
+        # Different triggers depend more/less on customer characteristics
+        weighted_score = (base_score * weight_sensitivity) + (base_effectiveness * weight_base)
         
-        # Add realistic noise
-        noise = np.random.normal(0, variance/3, len(customer_data))
+        # Add realistic noise - increases variation between triggers
+        noise = np.random.normal(0, variance, len(customer_data))
         
         # Boost for high-value customers (CLV adjustment)
         clv_boost = 0
@@ -248,13 +271,31 @@ class CausalSegmentationEngine:
             # High CLV customers respond better to most triggers
             clv_boost = (clv - 0.5) * 0.15  # Up to ±7.5% adjustment
         
-        # Campaign alignment bonus (if trigger matches campaign objective)
-        alignment_bonus = 0
-        if coo.proposed_intervention and trigger_type.lower() in coo.proposed_intervention.lower():
-            alignment_bonus = 0.08  # 8% bonus for aligned triggers
+        # Campaign alignment bonus/penalty (strong effect to prioritize campaign-matched triggers)
+        alignment_adjustment = 0
+        if coo.proposed_intervention and len(coo.proposed_intervention) > 0:
+            # Normalize trigger type for comparison
+            trigger_normalized = trigger_type.lower().replace('_', '').replace(' ', '')
+            
+            # Check if this trigger matches any of the proposed interventions
+            is_aligned = False
+            for proposed in coo.proposed_intervention:
+                proposed_normalized = proposed.lower().replace('_', '').replace(' ', '')
+                if trigger_normalized in proposed_normalized or proposed_normalized in trigger_normalized:
+                    is_aligned = True
+                    break
+            
+            if is_aligned:
+                # Strong bonus for campaign-aligned trigger
+                alignment_adjustment = 0.25  # 25% boost for aligned triggers
+                print(f"   🎯 Campaign alignment: +25% (matches one of {coo.proposed_intervention})")
+            else:
+                # Penalty for misaligned triggers (don't want discount winning when campaign wants exclusivity)
+                alignment_adjustment = -0.15  # 15% penalty for misaligned
+                print(f"   ⚠️  Campaign misalignment: -15% (campaign proposed {coo.proposed_intervention})")
         
         # Calculate final uplift score
-        uplift_score = weighted_score + clv_boost + alignment_bonus + noise
+        uplift_score = weighted_score + clv_boost + alignment_adjustment + noise
         
         # Clip to valid range [0, 1] and add some realistic floor
         uplift_score = np.clip(uplift_score, 0.15, 0.95)
@@ -300,13 +341,15 @@ class CausalSegmentationEngine:
             uplift_col = f'{trigger}_uplift_score'
             if uplift_col in scored_data.columns and len(scored_data) > 0:
                 avg_uplift = scored_data[uplift_col].mean()
+                std_uplift = scored_data[uplift_col].std()
                 
                 # Debug logging
                 print(f"\n🔍 Trigger: {trigger}")
                 print(f"   Customers analyzed: {len(scored_data)}")
                 print(f"   Uplift scores - Min: {scored_data[uplift_col].min():.3f}, "
                       f"Max: {scored_data[uplift_col].max():.3f}, "
-                      f"Mean: {avg_uplift:.3f}")
+                      f"Mean: {avg_uplift:.3f}, "
+                      f"Std: {std_uplift:.3f}")
                 
                 # Handle NaN from mean calculation
                 if pd.isna(avg_uplift):
@@ -314,13 +357,23 @@ class CausalSegmentationEngine:
                     print(f"   ⚠️  NaN detected, using default 0.5")
                 else:
                     avg_uplift = float(avg_uplift)
+                
+                # Calculate statistical confidence (inverse of coefficient of variation)
+                # Lower variance = higher confidence in the prediction
+                if std_uplift > 0 and not pd.isna(std_uplift):
+                    # Coefficient of variation (CV) = std / mean
+                    cv = std_uplift / avg_uplift if avg_uplift > 0 else 1.0
+                    # Convert to confidence: high CV = low confidence
+                    # Normalize to 0-1 scale (CV typically 0.1-0.5 for this data)
+                    confidence = max(0.5, min(0.95, 1.0 - cv))
+                    print(f"   Coefficient of Variation: {cv:.3f} → Confidence: {confidence:.1%}")
+                else:
+                    confidence = 0.75  # Default moderate confidence
+                    print(f"   Using default confidence: {confidence:.1%}")
                     
                 high_uplift_count = (scored_data[uplift_col] > 0.65).sum()
-                if len(scored_data) > 0:
-                    confidence = float(high_uplift_count / len(scored_data))
-                    print(f"   High performers (>0.65): {high_uplift_count} ({confidence*100:.1f}%)")
-                else:
-                    confidence = 0.5
+                coverage = float(high_uplift_count / len(scored_data))
+                print(f"   High performers (>0.65): {high_uplift_count} ({coverage*100:.1f}%)")
             else:
                 print(f"\n⚠️  Trigger: {trigger} - No uplift column found or empty data")
                 avg_uplift = 0.5

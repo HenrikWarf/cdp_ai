@@ -130,6 +130,22 @@ class DataGenerator:
                 bigquery.SchemaField('churn_probability_score', 'FLOAT'),
                 bigquery.SchemaField('social_proof_affinity', 'FLOAT'),
                 bigquery.SchemaField('content_engagement_score', 'FLOAT'),
+                # Product affinity scores
+                bigquery.SchemaField('living_room_affinity', 'FLOAT'),
+                bigquery.SchemaField('bedroom_affinity', 'FLOAT'),
+                bigquery.SchemaField('kitchen_dining_affinity', 'FLOAT'),
+                bigquery.SchemaField('office_affinity', 'FLOAT'),
+                bigquery.SchemaField('outdoor_affinity', 'FLOAT'),
+                bigquery.SchemaField('lighting_affinity', 'FLOAT'),
+                bigquery.SchemaField('storage_affinity', 'FLOAT'),
+                bigquery.SchemaField('textiles_affinity', 'FLOAT'),
+                bigquery.SchemaField('bathroom_affinity', 'FLOAT'),
+                bigquery.SchemaField('decoration_affinity', 'FLOAT'),
+                # Purchase profile
+                bigquery.SchemaField('favorite_category', 'STRING'),
+                bigquery.SchemaField('secondary_category', 'STRING'),
+                bigquery.SchemaField('cross_category_shopper', 'BOOLEAN'),
+                bigquery.SchemaField('price_tier_preference', 'STRING'),
             ],
             'transactions': [
                 bigquery.SchemaField('transaction_id', 'STRING', mode='REQUIRED'),
@@ -162,6 +178,12 @@ class DataGenerator:
                 bigquery.SchemaField('converted', 'BOOLEAN'),
                 bigquery.SchemaField('control_group', 'BOOLEAN'),
                 bigquery.SchemaField('timestamp', 'TIMESTAMP'),
+            ],
+            'product_associations': [
+                bigquery.SchemaField('primary_category', 'STRING', mode='REQUIRED'),
+                bigquery.SchemaField('associated_category', 'STRING', mode='REQUIRED'),
+                bigquery.SchemaField('association_strength', 'FLOAT'),
+                bigquery.SchemaField('common_sequence', 'INTEGER'),
             ],
         }
         
@@ -221,7 +243,7 @@ class DataGenerator:
         return df
     
     def generate_customer_scores(self):
-        """Generate ML-derived customer scores"""
+        """Generate ML-derived customer scores (placeholder - will be enriched after transactions)"""
         scores = []
         
         for customer_id in self.customer_ids:
@@ -233,10 +255,144 @@ class DataGenerator:
                 'churn_probability_score': round(random.uniform(0, 1), 3),
                 'social_proof_affinity': round(random.uniform(0, 1), 3),
                 'content_engagement_score': round(random.uniform(0, 1), 3),
+                # Product affinity scores (will be calculated from transactions)
+                'living_room_affinity': 0.0,
+                'bedroom_affinity': 0.0,
+                'kitchen_dining_affinity': 0.0,
+                'office_affinity': 0.0,
+                'outdoor_affinity': 0.0,
+                'lighting_affinity': 0.0,
+                'storage_affinity': 0.0,
+                'textiles_affinity': 0.0,
+                'bathroom_affinity': 0.0,
+                'decoration_affinity': 0.0,
+                'favorite_category': None,
+                'secondary_category': None,
+                'cross_category_shopper': False,
+                'price_tier_preference': None,  # budget/mid/premium
             })
         
         df = pd.DataFrame(scores)
-        print(f"✓ Generated scores for {len(df)} customers")
+        print(f"✓ Generated base scores for {len(df)} customers")
+        return df
+    
+    def enrich_customer_scores_with_affinities(self, scores_df, transactions_df):
+        """Calculate product affinities from actual transaction history"""
+        print("\n📊 Calculating product affinities from transactions...")
+        
+        # Category mapping for affinity columns
+        category_to_affinity = {
+            'Living Room': 'living_room_affinity',
+            'Bedroom': 'bedroom_affinity',
+            'Kitchen & Dining': 'kitchen_dining_affinity',
+            'Office': 'office_affinity',
+            'Outdoor': 'outdoor_affinity',
+            'Lighting': 'lighting_affinity',
+            'Storage & Organization': 'storage_affinity',
+            'Textiles': 'textiles_affinity',
+            'Bathroom': 'bathroom_affinity',
+            'Decoration': 'decoration_affinity'
+        }
+        
+        # Calculate purchase stats per customer
+        customer_purchases = transactions_df.groupby(['customer_id', 'product_category']).agg({
+            'order_value': ['count', 'sum']
+        }).reset_index()
+        customer_purchases.columns = ['customer_id', 'product_category', 'purchase_count', 'total_spent']
+        
+        # Get total purchases per customer
+        customer_totals = transactions_df.groupby('customer_id').agg({
+            'order_value': ['count', 'sum']
+        }).reset_index()
+        customer_totals.columns = ['customer_id', 'total_purchases', 'total_spent_overall']
+        
+        # Calculate affinities
+        for idx, row in scores_df.iterrows():
+            customer_id = row['customer_id']
+            
+            # Get this customer's purchases
+            cust_purchases = customer_purchases[customer_purchases['customer_id'] == customer_id]
+            cust_total = customer_totals[customer_totals['customer_id'] == customer_id]
+            
+            if len(cust_purchases) > 0 and len(cust_total) > 0:
+                total_purchases = cust_total['total_purchases'].iloc[0]
+                total_spent = cust_total['total_spent_overall'].iloc[0]
+                
+                # Calculate affinity for each category (normalized by total purchases)
+                for _, purchase_row in cust_purchases.iterrows():
+                    category = purchase_row['product_category']
+                    affinity_col = category_to_affinity.get(category)
+                    
+                    if affinity_col:
+                        # Affinity = (category_purchases / total_purchases) weighted by spend
+                        purchase_ratio = purchase_row['purchase_count'] / total_purchases
+                        spend_ratio = purchase_row['total_spent'] / total_spent
+                        affinity_score = (purchase_ratio * 0.6 + spend_ratio * 0.4)
+                        scores_df.at[idx, affinity_col] = round(affinity_score, 3)
+                
+                # Determine favorite and secondary categories
+                top_categories = cust_purchases.nlargest(2, 'purchase_count')
+                if len(top_categories) > 0:
+                    scores_df.at[idx, 'favorite_category'] = top_categories.iloc[0]['product_category']
+                if len(top_categories) > 1:
+                    scores_df.at[idx, 'secondary_category'] = top_categories.iloc[1]['product_category']
+                
+                # Cross-category shopper (purchased from 3+ categories)
+                num_categories = len(cust_purchases)
+                scores_df.at[idx, 'cross_category_shopper'] = num_categories >= 3
+                
+                # Price tier preference (based on average order value)
+                avg_order_value = total_spent / total_purchases
+                if avg_order_value > 800:
+                    scores_df.at[idx, 'price_tier_preference'] = 'premium'
+                elif avg_order_value > 300:
+                    scores_df.at[idx, 'price_tier_preference'] = 'mid'
+                else:
+                    scores_df.at[idx, 'price_tier_preference'] = 'budget'
+        
+        print(f"✓ Enriched {len(scores_df)} customer scores with product affinities")
+        return scores_df
+    
+    def generate_product_associations(self):
+        """Generate product association rules for cross-sell recommendations"""
+        print("\n🔗 Generating product associations...")
+        
+        associations = [
+            # Living Room associations
+            {'primary_category': 'Living Room', 'associated_category': 'Lighting', 'association_strength': 0.75, 'common_sequence': 1},
+            {'primary_category': 'Living Room', 'associated_category': 'Textiles', 'association_strength': 0.68, 'common_sequence': 1},
+            {'primary_category': 'Living Room', 'associated_category': 'Decoration', 'association_strength': 0.72, 'common_sequence': 1},
+            {'primary_category': 'Living Room', 'associated_category': 'Storage & Organization', 'association_strength': 0.55, 'common_sequence': 2},
+            
+            # Bedroom associations
+            {'primary_category': 'Bedroom', 'associated_category': 'Textiles', 'association_strength': 0.85, 'common_sequence': 1},
+            {'primary_category': 'Bedroom', 'associated_category': 'Lighting', 'association_strength': 0.65, 'common_sequence': 1},
+            {'primary_category': 'Bedroom', 'associated_category': 'Storage & Organization', 'association_strength': 0.60, 'common_sequence': 2},
+            {'primary_category': 'Bedroom', 'associated_category': 'Decoration', 'association_strength': 0.58, 'common_sequence': 1},
+            
+            # Kitchen & Dining associations
+            {'primary_category': 'Kitchen & Dining', 'associated_category': 'Lighting', 'association_strength': 0.62, 'common_sequence': 1},
+            {'primary_category': 'Kitchen & Dining', 'associated_category': 'Textiles', 'association_strength': 0.48, 'common_sequence': 2},
+            {'primary_category': 'Kitchen & Dining', 'associated_category': 'Storage & Organization', 'association_strength': 0.70, 'common_sequence': 1},
+            
+            # Office associations
+            {'primary_category': 'Office', 'associated_category': 'Lighting', 'association_strength': 0.78, 'common_sequence': 1},
+            {'primary_category': 'Office', 'associated_category': 'Storage & Organization', 'association_strength': 0.82, 'common_sequence': 1},
+            {'primary_category': 'Office', 'associated_category': 'Decoration', 'association_strength': 0.45, 'common_sequence': 2},
+            
+            # Outdoor associations
+            {'primary_category': 'Outdoor', 'associated_category': 'Lighting', 'association_strength': 0.55, 'common_sequence': 2},
+            {'primary_category': 'Outdoor', 'associated_category': 'Textiles', 'association_strength': 0.50, 'common_sequence': 2},
+            
+            # Cross-room progression patterns
+            {'primary_category': 'Living Room', 'associated_category': 'Bedroom', 'association_strength': 0.42, 'common_sequence': 3},
+            {'primary_category': 'Living Room', 'associated_category': 'Kitchen & Dining', 'association_strength': 0.38, 'common_sequence': 3},
+            {'primary_category': 'Bedroom', 'associated_category': 'Living Room', 'association_strength': 0.45, 'common_sequence': 3},
+            {'primary_category': 'Bedroom', 'associated_category': 'Bathroom', 'association_strength': 0.35, 'common_sequence': 3},
+        ]
+        
+        df = pd.DataFrame(associations)
+        print(f"✓ Generated {len(df)} product association rules")
         return df
     
     def generate_transactions(self):
@@ -446,8 +602,16 @@ class DataGenerator:
         
         # Generate all data
         customers_df = self.generate_customers()
-        scores_df = self.generate_customer_scores()
+        scores_df = self.generate_customer_scores()  # Initial scores (affinities = 0)
         transactions_df = self.generate_transactions()
+        
+        # Enrich scores with product affinities from transactions
+        scores_df = self.enrich_customer_scores_with_affinities(scores_df, transactions_df)
+        
+        # Generate product associations
+        associations_df = self.generate_product_associations()
+        
+        # Continue with other tables
         carts_df = self.generate_abandoned_carts()
         events_df = self.generate_behavioral_events()
         campaigns_df = self.generate_campaign_history()
@@ -458,6 +622,7 @@ class DataGenerator:
         self.load_dataframe('customers', customers_df)
         self.load_dataframe('customer_scores', scores_df)
         self.load_dataframe('transactions', transactions_df)
+        self.load_dataframe('product_associations', associations_df)
         self.load_dataframe('abandoned_carts', carts_df)
         self.load_dataframe('behavioral_events', events_df)
         self.load_dataframe('campaign_history', campaigns_df)
@@ -469,6 +634,7 @@ class DataGenerator:
         print(f"  Project: {GOOGLE_CLOUD_PROJECT}")
         print(f"  Customers: {len(customers_df):,}")
         print(f"  Transactions: {len(transactions_df):,}")
+        print(f"  Product Associations: {len(associations_df):,}")
         print(f"  Abandoned Carts: {len(carts_df):,}")
         print(f"  Behavioral Events: {len(events_df):,}")
         print(f"  Campaign Records: {len(campaigns_df):,}")

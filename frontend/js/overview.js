@@ -134,10 +134,41 @@ class OverviewDashboard {
             abandonedCartsEl.textContent = formatNumber(metrics.abandoned_carts_7d);
         }
 
-        // Average CLV
+        // Average CLV with interpretation
         const avgClvEl = document.getElementById('avg-clv');
         if (avgClvEl) {
             avgClvEl.textContent = formatPercentage(metrics.avg_clv_score, 0);
+            
+            // Add CLV interpretation tooltip/detail if available
+            if (metrics.clv_interpretation) {
+                const clvInterp = metrics.clv_interpretation;
+                const metricCard = avgClvEl.closest('.metric-card');
+                if (metricCard) {
+                    // Add tier badge
+                    const existingBadge = metricCard.querySelector('.clv-tier-badge');
+                    if (existingBadge) {
+                        existingBadge.remove();
+                    }
+                    
+                    const badge = document.createElement('div');
+                    badge.className = 'clv-tier-badge';
+                    badge.style.cssText = `
+                        font-size: 0.75rem;
+                        color: var(--text-secondary);
+                        margin-top: 0.25rem;
+                        font-weight: 500;
+                    `;
+                    badge.textContent = `${clvInterp.tier_label} • ${clvInterp.percentile}`;
+                    
+                    // Add tooltip on hover
+                    badge.title = clvInterp.description || '';
+                    
+                    const metricLabel = metricCard.querySelector('.metric-label');
+                    if (metricLabel) {
+                        metricLabel.parentNode.insertBefore(badge, metricLabel.nextSibling.nextSibling);
+                    }
+                }
+            }
         }
 
         // At-Risk Customers

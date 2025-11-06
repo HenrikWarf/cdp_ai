@@ -79,7 +79,10 @@ class QueryBuilder:
             "cs.exclusivity_seeker_flag",
             "cs.social_proof_affinity",
             "cs.churn_probability_score",
-            "cs.content_engagement_score"
+            "cs.content_engagement_score",
+            "cs.favorite_category",
+            "cs.secondary_category",
+            "cs.price_tier_preference"
         ]
         
         # Add behavior-specific fields
@@ -154,9 +157,22 @@ class QueryBuilder:
                 print(f"   🔀 Cross-sell filter: recent purchasers (last 30 days)")
             
             elif coo.target_behavior in ["new_customer", "acquisition"]:
-                # New customers acquired in last 7 days
-                conditions.append("CAST(c.creation_date AS TIMESTAMP) > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)")
-                print(f"   ✨ New customer filter: acquired in last 7 days")
+                # New customers - use time_constraint if provided, otherwise default to 7 days
+                days_interval = 7  # default
+                if coo.time_constraint:
+                    # Parse common time constraints
+                    time_str = coo.time_constraint.lower()
+                    if 'quarter' in time_str or '90' in time_str:
+                        days_interval = 90
+                    elif '30' in time_str or 'month' in time_str:
+                        days_interval = 30
+                    elif '14' in time_str or 'two_week' in time_str:
+                        days_interval = 14
+                    elif '7' in time_str or 'week' in time_str:
+                        days_interval = 7
+                
+                conditions.append(f"CAST(c.creation_date AS TIMESTAMP) > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {days_interval} DAY)")
+                print(f"   ✨ New customer filter: acquired in last {days_interval} days")
             
             elif coo.target_behavior in ["retention", "repeat_purchase"]:
                 # At-risk retention: purchased 30-90 days ago, might not come back
@@ -187,21 +203,41 @@ class QueryBuilder:
             conditions.append("cs.exclusivity_seeker_flag = true")
             print(f"   🎁 Win-back filter: exclusivity_seeker_flag = true")
         
-        # Uplift score conditions based on proposed intervention
+        # Product affinity filtering
+        # Look for product categories in target_subgroup or target_behavior
+        product_filters = self._extract_product_affinity_filters(coo)
+        if product_filters:
+            conditions.extend(product_filters)
+        
+        # Uplift score conditions based on selected trigger
         if uplift_scores:
-            intervention = sanitize_sql_identifier(coo.proposed_intervention)
-            threshold = uplift_scores.get(intervention, Config.DEFAULT_UPLIFT_THRESHOLD)
+            # Get the first (and only) trigger from uplift_scores dict
+            trigger_name = list(uplift_scores.keys())[0]
+            threshold = list(uplift_scores.values())[0]
             
-            # Map intervention to score field
+            # Sanitize trigger name for SQL field lookup
+            intervention = sanitize_sql_identifier(trigger_name)
+            
+            # Map trigger name to score field
             score_mapping = {
                 'personalized_discount_offer': 'discount_sensitivity_score',
                 'discount': 'discount_sensitivity_score',
                 'free_shipping': 'free_shipping_sensitivity_score',
-                'free_expedited_shipping': 'free_shipping_sensitivity_score'
+                'free_expedited_shipping': 'free_shipping_sensitivity_score',
+                'scarcity': 'discount_sensitivity_score',  # Scarcity works on price-sensitive customers
+                'exclusivity': 'exclusivity_seeker_flag',  # Boolean field
+                'social_proof': 'social_proof_affinity'  # Separate affinity score
             }
             
             score_field = score_mapping.get(intervention, 'discount_sensitivity_score')
-            conditions.append(f"cs.{score_field} > {threshold}")
+            
+            # Handle boolean fields (like exclusivity_seeker_flag)
+            if score_field == 'exclusivity_seeker_flag':
+                conditions.append(f"cs.{score_field} = true")
+                print(f"   🎯 Trigger filter: {trigger_name} -> {score_field} = true")
+            else:
+                conditions.append(f"cs.{score_field} > {threshold}")
+                print(f"   🎯 Trigger filter: {trigger_name} -> {score_field} > {threshold}")
         
         # Cart value conditions ONLY for abandoned cart campaigns
         if coo.target_behavior == "abandoned_cart":
@@ -281,4 +317,67 @@ WHERE ch.customer_id IN ('{customer_ids_str}')
   AND ch.trigger_type = '{intervention}'
 ORDER BY ch.timestamp DESC
 """
+    
+    def _extract_product_affinity_filters(self, coo: CampaignObjectiveObject) -> List[str]:
+        """
+        Extract product affinity filters from campaign objective
+        
+        Args:
+            coo: Campaign Objective Object
+        
+        Returns:
+            List of SQL filter conditions
+        """
+        filters = []
+        
+        # Category mappings
+        category_affinity_map = {
+            'living_room': 'living_room_affinity',
+            'living': 'living_room_affinity',
+            'sofa': 'living_room_affinity',
+            'bedroom': 'bedroom_affinity',
+            'bed': 'bedroom_affinity',
+            'kitchen': 'kitchen_dining_affinity',
+            'dining': 'kitchen_dining_affinity',
+            'office': 'office_affinity',
+            'desk': 'office_affinity',
+            'outdoor': 'outdoor_affinity',
+            'patio': 'outdoor_affinity',
+            'lighting': 'lighting_affinity',
+            'lamp': 'lighting_affinity',
+            'storage': 'storage_affinity',
+            'textiles': 'textiles_affinity',
+            'bathroom': 'bathroom_affinity',
+            'decoration': 'decoration_affinity',
+        }
+        
+        # Check target_subgroup for product mentions
+        search_text = ""
+        if coo.target_subgroup:
+            search_text += coo.target_subgroup.lower() + " "
+        if coo.target_behavior:
+            search_text += coo.target_behavior.lower() + " "
+        
+        # Look for category keywords in the search text
+        for keyword, affinity_col in category_affinity_map.items():
+            if keyword in search_text:
+                # Target customers with medium to high affinity (>= 0.3)
+                filters.append(f"cs.{affinity_col} >= 0.3")
+                print(f"   🏠 Product affinity filter: {affinity_col} >= 0.3")
+                break  # Only apply one product filter per campaign
+        
+        # Check for cross-category shoppers
+        if 'cross' in search_text or 'multiple' in search_text or 'various' in search_text:
+            filters.append("cs.cross_category_shopper = true")
+            print(f"   🔀 Cross-category shopper filter applied")
+        
+        # Check for price tier preferences
+        if 'premium' in search_text or 'luxury' in search_text or 'high-end' in search_text:
+            filters.append("cs.price_tier_preference = 'premium'")
+            print(f"   💎 Premium tier filter applied")
+        elif 'budget' in search_text or 'affordable' in search_text or 'value' in search_text:
+            filters.append("cs.price_tier_preference = 'budget'")
+            print(f"   💰 Budget tier filter applied")
+        
+        return filters
 

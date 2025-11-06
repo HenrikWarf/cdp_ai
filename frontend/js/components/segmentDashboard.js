@@ -10,7 +10,7 @@ export class SegmentDashboardComponent {
         this.defaultContainer = document.getElementById(containerId);
     }
 
-    render(metadata, coo = null, container = null) {
+    render(metadata, coo = null, container = null, showDemographics = false) {
         // Use provided container or fall back to default
         const targetContainer = container || this.defaultContainer;
         
@@ -25,16 +25,19 @@ export class SegmentDashboardComponent {
         const statsGrid = this.createStatsGrid(metadata);
         targetContainer.appendChild(statsGrid);
 
-        // Create demographic breakdown if available
-        if (metadata.demographic_breakdown && Object.keys(metadata.demographic_breakdown).length > 0) {
-            const demoSection = this.createDemographicSection(metadata.demographic_breakdown);
-            targetContainer.appendChild(demoSection);
-        }
+        // Only show demographics/categories if explicitly requested (for final segment view)
+        if (showDemographics) {
+            // Create demographic breakdown if available
+            if (metadata.demographic_breakdown && Object.keys(metadata.demographic_breakdown).length > 0) {
+                const demoSection = this.createDemographicSection(metadata.demographic_breakdown);
+                targetContainer.appendChild(demoSection);
+            }
 
-        // Create product categories section if available
-        if (metadata.common_product_categories && metadata.common_product_categories.length > 0) {
-            const categoriesSection = this.createCategoriesSection(metadata.common_product_categories);
-            targetContainer.appendChild(categoriesSection);
+            // Create product categories section if available
+            if (metadata.common_product_categories && metadata.common_product_categories.length > 0) {
+                const categoriesSection = this.createCategoriesSection(metadata.common_product_categories);
+                targetContainer.appendChild(categoriesSection);
+            }
         }
     }
 
@@ -50,13 +53,20 @@ export class SegmentDashboardComponent {
             'primary'
         ));
 
-        // Average CLV
-        grid.appendChild(this.createStatCard(
-            'Avg CLV Score',
-            formatPercentage(metadata.avg_clv_score, 0),
-            `${Math.round(metadata.avg_clv_score * 100)}th percentile`,
-            'secondary'
-        ));
+        // Average CLV with interpretation
+        const clvInterp = metadata.clv_interpretation;
+        if (clvInterp) {
+            // Create enhanced CLV card with interpretation
+            grid.appendChild(this.createEnhancedCLVCard(metadata.avg_clv_score, clvInterp));
+        } else {
+            // Fallback to simple CLV card
+            grid.appendChild(this.createStatCard(
+                'Avg CLV Score',
+                formatPercentage(metadata.avg_clv_score, 0),
+                `${Math.round(metadata.avg_clv_score * 100)}th percentile`,
+                'secondary'
+            ));
+        }
 
         // Predicted Uplift
         grid.appendChild(this.createStatCard(
@@ -85,6 +95,36 @@ export class SegmentDashboardComponent {
         }
 
         return grid;
+    }
+
+    createEnhancedCLVCard(avgClvScore, interpretation) {
+        const card = document.createElement('div');
+        
+        // Color class based on tier
+        let colorClass = 'secondary';
+        if (interpretation.tier === 'premium') colorClass = 'success';
+        else if (interpretation.tier === 'high') colorClass = 'secondary';
+        else if (interpretation.tier === 'medium') colorClass = 'warning';
+        else if (interpretation.tier === 'low') colorClass = 'danger';
+        
+        card.className = `stat-card ${colorClass}`;
+        
+        // Build subtitle with tier and comparison
+        let subtitle = interpretation.tier_label;
+        if (interpretation.vs_baseline_label !== 'At Baseline') {
+            subtitle += ` (${interpretation.vs_baseline_formatted} vs baseline)`;
+        }
+        
+        card.innerHTML = `
+            <div class="stat-label">Avg CLV Score</div>
+            <div class="stat-value">${interpretation.score_percentage}</div>
+            <div class="stat-subtitle">${subtitle}</div>
+            <div class="stat-detail" style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">
+                ${interpretation.percentile} • ${interpretation.description || ''}
+            </div>
+        `;
+        
+        return card;
     }
 
     createStatCard(label, value, subtitle, colorClass = 'primary') {

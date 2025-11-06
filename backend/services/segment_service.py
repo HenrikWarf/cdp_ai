@@ -15,9 +15,11 @@ from backend.api.schemas import (
     SegmentMetadata,
     CustomerProfile,
     TriggerRecommendation,
-    CampaignAnalysisResponse
+    CampaignAnalysisResponse,
+    CLVInterpretation
 )
 from backend.utils.helpers import generate_segment_id, format_currency
+from backend.utils.clv_interpreter import interpret_segment_clv
 from backend.config import Config
 
 
@@ -102,11 +104,17 @@ class SegmentService:
         print(f"   Trigger suggestions: {len(trigger_suggestions)}")
         print(f"   AI filters: {len(segment_preview.ai_filters)}")
         
+        # Auto-select the top trigger as recommended
+        recommended_trigger = trigger_suggestions[0] if trigger_suggestions else None
+        if recommended_trigger:
+            print(f"   🎯 Recommended Trigger: {recommended_trigger.trigger_name} ({recommended_trigger.predicted_uplift:.1%} uplift)")
+        
         try:
             response = CampaignAnalysisResponse(
                 campaign_objective_object=coo,
                 segment_preview=segment_preview,
                 trigger_suggestions=trigger_suggestions,
+                recommended_trigger=recommended_trigger,
                 explainability=explainability
             )
             print(f"   ✅ CampaignAnalysisResponse created successfully")
@@ -429,12 +437,17 @@ class SegmentService:
                 if not (pd.isna(k) or pd.isna(v))
             }
         
+        # Generate CLV interpretation for preview
+        clv_interp_dict = interpret_segment_clv(final_avg_clv, final_size)
+        clv_interpretation = CLVInterpretation(**clv_interp_dict)
+        
         return FilterPreviewResponse(
             starting_size=starting_size,
             final_size=final_size,
             percentage_retained=round(percentage_retained, 1),
             filters_applied=filters_applied,
             final_avg_clv=round(final_avg_clv, 3),
+            clv_interpretation=clv_interpretation,
             final_avg_cart_value=round(final_avg_cart_value, 2) if final_avg_cart_value else None,
             demographic_breakdown=demographic_breakdown
         )
@@ -583,7 +596,8 @@ class SegmentService:
         print(f"   Customer DataFrame shape: {customer_df.shape}")
         print(f"   Columns: {list(customer_df.columns)}")
         
-        segment_id = generate_segment_id(coo.proposed_intervention)
+        # Generate segment ID from first proposed intervention
+        segment_id = generate_segment_id(coo.proposed_intervention[0] if coo.proposed_intervention else 'general')
         estimated_size = len(customer_df)
         
         print(f"   Segment ID: {segment_id}")
@@ -629,6 +643,11 @@ class SegmentService:
         predicted_uplift = top_trigger.predicted_uplift if top_trigger else 0.15
         predicted_roi = "4-6x" if predicted_uplift > 0.6 else "2-4x"
         
+        # Generate CLV interpretation
+        clv_interp_dict = interpret_segment_clv(avg_clv, estimated_size)
+        clv_interpretation = CLVInterpretation(**clv_interp_dict)
+        print(f"   📊 CLV Interpretation: {clv_interpretation.tier_label} ({clv_interpretation.score_percentage})")
+        
         print(f"   Creating SegmentMetadata with ai_filters: {len(ai_filters)}")
         
         try:
@@ -638,6 +657,7 @@ class SegmentService:
                 predicted_uplift=predicted_uplift,
                 predicted_roi=predicted_roi,
                 avg_clv_score=avg_clv,
+                clv_interpretation=clv_interpretation,
                 avg_cart_value=avg_cart_value,
                 common_product_categories=common_categories,
                 demographic_breakdown=demographic_breakdown,
@@ -655,6 +675,7 @@ class SegmentService:
                 predicted_uplift=predicted_uplift,
                 predicted_roi=predicted_roi,
                 avg_clv_score=avg_clv,
+                clv_interpretation=clv_interpretation,
                 avg_cart_value=avg_cart_value,
                 common_product_categories=common_categories,
                 demographic_breakdown=demographic_breakdown,
@@ -678,12 +699,28 @@ class SegmentService:
             if location_city is not None and pd.isna(location_city):
                 location_city = None
             
+            # Extract product affinity data if available
+            favorite_category = row.get('favorite_category') if 'favorite_category' in row else None
+            if favorite_category is not None and pd.isna(favorite_category):
+                favorite_category = None
+            
+            secondary_category = row.get('secondary_category') if 'secondary_category' in row else None
+            if secondary_category is not None and pd.isna(secondary_category):
+                secondary_category = None
+            
+            price_tier = row.get('price_tier_preference') if 'price_tier_preference' in row else None
+            if price_tier is not None and pd.isna(price_tier):
+                price_tier = None
+            
             profile = CustomerProfile(
                 customer_id=str(row.get('customer_id', '')),
                 email=str(row.get('email_address', '')),
                 first_name=str(row.get('first_name', 'Valued Customer')),
                 clv_score=clv_score,
-                location_city=str(location_city) if location_city is not None else None
+                location_city=str(location_city) if location_city is not None else None,
+                favorite_category=str(favorite_category) if favorite_category is not None else None,
+                secondary_category=str(secondary_category) if secondary_category is not None else None,
+                price_tier_preference=str(price_tier) if price_tier is not None else None
             )
             
             # Add abandoned cart data if available
@@ -711,8 +748,10 @@ class SegmentService:
         """Generate explainability information for the segment"""
         
         # Get feature importance - now calculated from REAL data
+        # Use first proposed intervention for feature importance calculation
+        primary_intervention = coo.proposed_intervention[0] if coo.proposed_intervention else 'discount'
         feature_importance = self.causal_engine.get_feature_importance(
-            coo.proposed_intervention,
+            primary_intervention,
             customer_data  # Pass actual customer data
         )
         
@@ -754,9 +793,20 @@ class SegmentService:
                 f"The segment includes only customers within the {coo.time_constraint} timeframe. "
             )
         
+        # Format proposed interventions nicely
+        if coo.proposed_intervention:
+            if len(coo.proposed_intervention) == 1:
+                intervention_text = coo.proposed_intervention[0]
+            elif len(coo.proposed_intervention) == 2:
+                intervention_text = f"{coo.proposed_intervention[0]} or {coo.proposed_intervention[1]}"
+            else:
+                intervention_text = f"{', '.join(coo.proposed_intervention[:-1])}, or {coo.proposed_intervention[-1]}"
+        else:
+            intervention_text = "proposed"
+        
         explanation += (
-            f"Based on historical campaign data, the {coo.proposed_intervention} intervention "
-            f"is predicted to have the highest impact on this audience."
+            f"Based on historical campaign data, {intervention_text} interventions "
+            f"are predicted to have strong impact on this audience."
         )
         
         return explanation

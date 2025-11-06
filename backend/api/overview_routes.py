@@ -6,6 +6,7 @@ Provides aggregated statistics and insights for the overview dashboard
 from flask import Blueprint, jsonify, request
 from backend.services.bigquery_service import BigQueryService
 from backend.config import Config
+from backend.utils.clv_interpreter import interpret_clv_score
 from datetime import datetime, timedelta
 
 overview_bp = Blueprint('overview', __name__)
@@ -181,10 +182,14 @@ def get_key_metrics():
     """
     at_risk = bigquery_service.query(query)['total'].iloc[0]
     
+    # Generate CLV interpretation for overview
+    clv_interpretation = interpret_clv_score(float(avg_clv), include_description=True)
+    
     return {
         'total_customers': int(total_customers),
         'abandoned_carts_7d': int(abandoned_carts),
         'avg_clv_score': float(avg_clv),
+        'clv_interpretation': clv_interpretation,
         'at_risk_customers': int(at_risk)
     }
 

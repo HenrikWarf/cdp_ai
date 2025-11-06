@@ -58,7 +58,7 @@ class CampaignObjectiveObject(BaseModel):
     target_subgroup: Optional[str] = None
     metric_target: MetricTarget
     time_constraint: Optional[str] = None
-    proposed_intervention: str
+    proposed_intervention: List[str]  # List of potential intervention types for evaluation
     underlying_assumptions: List[str] = []
     
     class Config:
@@ -69,20 +69,35 @@ class CampaignObjectiveObject(BaseModel):
                 "target_subgroup": "high_value_shopper",
                 "metric_target": {"type": "conversion_rate_increase", "value": 0.20},
                 "time_constraint": "48_hours_post_abandonment",
-                "proposed_intervention": "personalized_discount_offer",
+                "proposed_intervention": ["discount", "free_shipping"],
                 "underlying_assumptions": ["price_sensitive", "prior_engagement_with_products"]
             }
         }
 
 
 class TriggerRecommendation(BaseModel):
-    """Individual trigger recommendation"""
+    """Individual trigger recommendation with uplift predictions"""
     trigger_type: str
     trigger_name: str
-    confidence_score: float
-    predicted_uplift: float
+    confidence_score: float  # Statistical confidence in the prediction (0-1), based on consistency across customers
+    predicted_uplift: float  # Expected conversion rate increase (0-1), e.g., 0.72 = 72% uplift
     description: str
     rationale: str
+
+
+class CLVInterpretation(BaseModel):
+    """Business-friendly interpretation of CLV score"""
+    tier: str  # 'premium', 'high', 'medium', 'low'
+    tier_label: str  # 'Premium', 'Above Average', 'Average', 'Below Average'
+    score_percentage: str  # e.g., "72%"
+    score_raw: float  # Raw score 0-1
+    vs_baseline: float  # Percentage difference from baseline
+    vs_baseline_label: str  # 'Above Average', 'At Baseline', 'Below Average'
+    vs_baseline_formatted: str  # e.g., "+1.4%"
+    percentile: str  # e.g., "60-80th"
+    description: Optional[str] = None  # Detailed description
+    segment_summary: Optional[str] = None  # For segment-level interpretation
+    actionable_insight: Optional[str] = None  # Business recommendation
 
 
 class AIFilter(BaseModel):
@@ -100,6 +115,7 @@ class SegmentMetadata(BaseModel):
     predicted_uplift: float
     predicted_roi: str
     avg_clv_score: float
+    clv_interpretation: Optional[CLVInterpretation] = None  # Business-friendly CLV interpretation
     avg_cart_value: Optional[float] = None
     common_product_categories: List[str] = []
     demographic_breakdown: Dict[str, Any] = {}
@@ -116,6 +132,10 @@ class CustomerProfile(BaseModel):
     abandoned_cart_id: Optional[str] = None
     cart_value: Optional[float] = None
     cart_items: Optional[List[str]] = None
+    # Product affinity data
+    favorite_category: Optional[str] = None
+    secondary_category: Optional[str] = None
+    price_tier_preference: Optional[str] = None
 
 
 class SegmentResponse(BaseModel):
@@ -144,6 +164,7 @@ class FilterPreviewResponse(BaseModel):
     final_size: int
     filters_applied: List[Dict[str, Any]]
     final_avg_clv: float
+    clv_interpretation: Optional[CLVInterpretation] = None  # CLV interpretation for preview
     final_avg_cart_value: Optional[float] = None
     percentage_retained: float
     demographic_breakdown: Optional[Dict[str, Any]] = None
@@ -154,6 +175,7 @@ class CampaignAnalysisResponse(BaseModel):
     campaign_objective_object: CampaignObjectiveObject
     segment_preview: SegmentMetadata
     trigger_suggestions: List[TriggerRecommendation]
+    recommended_trigger: TriggerRecommendation  # Auto-selected top trigger
     explainability: Dict[str, Any]
 
 

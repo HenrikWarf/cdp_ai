@@ -17,11 +17,31 @@
         <div class="container">
             
             <!-- Campaign Input Section -->
-            <section id="campaign-input-section" class="section">
+            <section id="campaign-input-section" class="section" style="display: block;">
                 <div class="section-header">
                     <h2>Describe Your Campaign Objective</h2>
                     <p>Enter your campaign goal in natural language, and our AI will create the perfect customer segment</p>
                 </div>
+
+                <!-- Campaign Template/Builder Toggle -->
+                <div class="campaign-mode-toggle-wrapper">
+                    <div class="mode-toggle">
+                        <button id="mode-templates" class="toggle-btn" data-mode="templates">
+                            <span class="toggle-icon">📋</span>
+                            <span class="toggle-label">Pre-defined Campaigns</span>
+                        </button>
+                        <button id="mode-builder" class="toggle-btn" data-mode="builder">
+                            <span class="toggle-icon">🔧</span>
+                            <span class="toggle-label">Build Your Own</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Templates Container (hidden by default) -->
+                <div id="campaign-templates-container" class="campaign-selector-container" style="display: none;"></div>
+
+                <!-- Builder Container (hidden by default) -->
+                <div id="campaign-builder-container" class="campaign-selector-container" style="display: none;"></div>
 
                 <div class="campaign-input-card">
                     <div class="input-wrapper">
@@ -44,7 +64,7 @@
                     </div>
 
                     <div class="example-prompts">
-                        <p class="example-label">Example Campaigns:</p>
+                        <p class="example-label">Or try quick examples:</p>
                         <div class="example-chips">
                             <button class="chip" data-example="cart">Abandoned Cart Recovery</button>
                             <button class="chip" data-example="retention">Customer Retention</button>
@@ -60,7 +80,7 @@
                 <div class="step-indicator">
                     <span class="step-badge">Step 2</span>
                     <h2>Campaign Analysis Complete</h2>
-                    <p>Review AI interpretation and initial segment</p>
+                    <p>Review AI interpretation, select trigger, and view filtered segment</p>
                 </div>
                 
                 <!-- Campaign Objective Object -->
@@ -69,18 +89,25 @@
                     <div id="coo-display" class="coo-display"></div>
                 </div>
 
-                <!-- Full Eligible Segment Overview -->
+                <!-- Trigger Selection -->
+                <div class="results-card">
+                    <h3>🎯 Select Campaign Trigger</h3>
+                    <p class="card-subtitle">Choose the best trigger for your segment or proceed without one</p>
+                    <div id="trigger-selection-container"></div>
+                </div>
+
+                <!-- Eligible Segment (Filtered by Trigger) -->
                 <div class="results-card dashboard-card">
-                    <h3>Full Eligible Segment (AI-Filtered)</h3>
-                    <p class="card-subtitle">These are all customers matching your campaign's core criteria</p>
+                    <h3>Eligible Segment</h3>
+                    <p class="card-subtitle" id="segment-subtitle">These customers match your campaign criteria</p>
                     <div id="full-segment-dashboard" class="dashboard-content"></div>
                     <div id="ai-filters-display" class="ai-filters-display"></div>
                 </div>
 
                 <!-- Action -->
                 <div class="action-bar">
-                    <button id="proceed-to-triggers-btn" class="btn btn-primary">
-                        Select Trigger
+                    <button id="proceed-to-refine-btn" class="btn btn-primary">
+                        Refine Segment →
                     </button>
                     <button id="new-campaign-btn" class="btn btn-secondary">
                         Start New Campaign
@@ -88,67 +115,33 @@
                 </div>
             </section>
 
-            <!-- Step 3: Select Trigger (Initially Hidden) -->
-            <section id="trigger-selection-section" class="section" style="display: none;">
-                <div class="step-indicator">
-                    <span class="step-badge">Step 3</span>
-                    <h2>Select Trigger & Preview Impact</h2>
-                    <p>Choose the best trigger for your segment</p>
-                </div>
-
-                <!-- Trigger Recommendations -->
-                <div class="results-card">
-                    <h3>Recommended Triggers</h3>
-                    <p class="card-subtitle">AI-ranked triggers optimized for your segment. <strong>Click a trigger below</strong> to preview its impact and filter to customers most likely to respond.</p>
-                    <div id="trigger-suggestions" class="trigger-grid"></div>
-                </div>
-
-                <!-- Trigger Impact Preview -->
-                <div class="results-card" id="trigger-preview-card" style="display: none;">
-                    <h3>📊 Trigger Filter Impact</h3>
-                    <p class="card-subtitle">Segment narrowed to customers with high sensitivity to selected trigger</p>
-                    <div id="trigger-preview-content" class="filter-preview-content"></div>
-                </div>
-
-                <!-- Actions -->
-                <div class="action-bar">
-                    <button id="apply-trigger-btn" class="btn btn-primary" style="display: none;">
-                        Apply Trigger & Continue
-                    </button>
-                    <button id="skip-trigger-btn" class="btn btn-secondary">
-                        Skip Trigger Filter
-                    </button>
-                    <button id="back-to-analysis-btn-2" class="btn btn-outline">
-                        ← Back to Analysis
-                    </button>
-                </div>
-            </section>
-
-            <!-- Step 4: Refine Segment (Initially Hidden) -->
+            <!-- Step 3: Refine Segment (Initially Hidden) -->
             <section id="refine-segment-section" class="section" style="display: none;">
                 <div class="step-indicator">
-                    <span class="step-badge">Step 4</span>
+                    <span class="step-badge">Step 3</span>
                     <h2>Refine Your Segment (Optional)</h2>
-                    <p>Add location, CLV, or other filters on top of trigger filtering</p>
+                    <p>Add location, CLV, or other filters to further narrow your segment</p>
                 </div>
 
-                <!-- Current Segment Overview -->
-                <div class="results-card dashboard-card">
-                    <h3>Current Segment (After Trigger Filter)</h3>
-                    <div id="trigger-filtered-dashboard" class="dashboard-content"></div>
-                </div>
+                <!-- Compact Two-Column Layout -->
+                <div class="refine-grid">
+                    <!-- Left Column: Current Segment -->
+                    <div class="refine-column">
+                        <div class="results-card compact-card">
+                            <h3>Current Segment</h3>
+                            <div id="trigger-filtered-dashboard" class="dashboard-content-compact"></div>
+                        </div>
 
-                <!-- Section 1: AI-Applied Filters -->
-                <div class="results-card">
-                    <h3>🤖 Filters Already Applied</h3>
-                    <p class="card-subtitle">Campaign AI filters + Trigger sensitivity filter</p>
-                    <div id="ai-filters-review" class="filters-review"></div>
-                </div>
+                        <div class="results-card compact-card">
+                            <h3>🤖 Filters Applied</h3>
+                            <div id="ai-filters-review" class="filters-review-compact"></div>
+                        </div>
+                    </div>
 
-                <!-- Section 2: Add New Filters -->
-                <div class="results-card">
-                    <h3>➕ Add Additional Filters</h3>
-                    <p class="card-subtitle">Optional: Further narrow your segment with standard filters</p>
+                    <!-- Right Column: Add Filters -->
+                    <div class="refine-column">
+                        <div class="results-card compact-card">
+                            <h3>➕ Add Filters</h3>
                     
                     <div class="filter-form">
                         <!-- Location Filters -->
@@ -222,40 +215,38 @@
                             </div>
                         </div>
 
-                        <button id="preview-filters-btn" class="btn btn-secondary">
-                            Preview Filter Impact
+                        <button id="preview-filters-btn" class="btn btn-secondary btn-block">
+                            Apply Filter to Segment
                         </button>
-                        <button id="clear-filters-btn" class="btn btn-outline">
+                        <button id="clear-filters-btn" class="btn btn-outline btn-block">
                             Clear All Filters
                         </button>
                     </div>
-                </div>
 
-                <!-- Section 3: Filter Impact Preview -->
-                <div class="results-card" id="filter-preview-card" style="display: none;">
-                    <h3>📊 Filter Impact Preview</h3>
-                    <p class="card-subtitle">See how your filters affect segment size and quality</p>
-                    <div id="filter-preview-content" class="filter-preview-content"></div>
+                            <!-- Filter Impact Preview -->
+                            <div id="filter-preview-card" style="display: none; margin-top: var(--spacing-md);">
+                                <h4>📊 Filter Impact</h4>
+                                <div id="filter-preview-content" class="filter-preview-content-compact"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Actions -->
                 <div class="action-bar">
-                    <button id="apply-filters-btn" class="btn btn-primary" style="display: none;">
-                        Apply Filters & Continue
+                    <button id="proceed-to-activate-btn" class="btn btn-primary">
+                        Continue to Activation →
                     </button>
-                    <button id="skip-filters-btn" class="btn btn-secondary">
-                        Skip to Activation
-                    </button>
-                    <button id="back-to-triggers-btn" class="btn btn-outline">
-                        ← Back to Trigger Selection
+                    <button id="back-to-analysis-btn-refine" class="btn btn-outline">
+                        ← Back to Analysis
                     </button>
                 </div>
             </section>
 
-            <!-- Step 5: Activate Segment (Initially Hidden) -->
+            <!-- Step 4: Activate Segment (Initially Hidden) -->
             <section id="activate-segment-section" class="section" style="display: none;">
                 <div class="step-indicator">
-                    <span class="step-badge">Step 5</span>
+                    <span class="step-badge">Step 4</span>
                     <h2>Activate Segment</h2>
                     <p>Review final segment and create for activation</p>
                 </div>
@@ -264,12 +255,6 @@
                 <div class="results-card dashboard-card">
                     <h3>Final Segment Overview</h3>
                     <div id="final-segment-dashboard" class="dashboard-content"></div>
-                </div>
-
-                <!-- Explainability -->
-                <div class="results-card">
-                    <h3>Why This Segment?</h3>
-                    <div id="explainability-section" class="explainability-content"></div>
                 </div>
 
                 <!-- Actions -->

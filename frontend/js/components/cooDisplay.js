@@ -58,10 +58,19 @@ export class CooDisplayComponent {
             ));
         }
 
-        // Proposed Intervention
+        // Proposed Intervention (can be array or string)
+        let interventionHtml = '';
+        if (Array.isArray(coo.proposed_intervention)) {
+            interventionHtml = coo.proposed_intervention.map(intervention => 
+                `<span class="coo-badge badge-success">${this.formatValue(intervention)}</span>`
+            ).join(' ');
+        } else {
+            interventionHtml = `<span class="coo-badge badge-success">${this.formatValue(coo.proposed_intervention)}</span>`;
+        }
+        
         this.container.appendChild(this.createCooItem(
-            'Proposed Intervention',
-            `<span class="coo-badge badge-success">${this.formatValue(coo.proposed_intervention)}</span>`
+            'Proposed Interventions',
+            interventionHtml
         ));
 
         // Underlying Assumptions

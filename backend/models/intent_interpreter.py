@@ -124,8 +124,8 @@ You must identify:
 3. target_subgroup: The customer segment (e.g., high_value_shopper, new_customer, loyal_customer)
 4. metric_target: The success metric with NUMERIC value as a decimal (e.g., 0.20 for 20% increase)
 5. time_constraint: Timeframe for the campaign (e.g., 48_hours_post_abandonment, 7_days, 30_days)
-6. proposed_intervention: The trigger/offer type (discount, free_shipping, scarcity, exclusivity, social_proof, content, gift_with_purchase, cashback, bundling)
-7. underlying_assumptions: Marketing psychology assumptions (e.g., price_sensitive, urgency_responsive, status_seeking)
+6. proposed_intervention: ARRAY of intervention types that would work for this campaign. List 1-3 options from: discount, free_shipping, scarcity, exclusivity, social_proof, content, gift_with_purchase, cashback, bundling
+7. underlying_assumptions: Array of strings - marketing psychology assumptions (e.g., ["price_sensitive", "urgency_responsive", "status_seeking"])
 
 Campaign Objective to analyze: "{campaign_objective}"
 
@@ -146,12 +146,14 @@ OUTPUT FORMAT - CRITICAL INSTRUCTIONS:
     "value": 0.20
   }},
   "time_constraint": "<time_constraint>",
-  "proposed_intervention": "<intervention_type>",
-  "underlying_assumptions": ["<assumption1>", "<assumption2>"]
+  "proposed_intervention": ["discount", "free_shipping"],
+  "underlying_assumptions": ["assumption1", "assumption2"]
 }}
 
-IMPORTANT: 
+CRITICAL REQUIREMENTS: 
 - metric_target.value MUST be a numeric decimal (0.20 for 20%, 0.15 for 15%, etc.)
+- proposed_intervention MUST be an ARRAY of 1-3 intervention strings - these will be evaluated and ranked
+- underlying_assumptions MUST be an array of strings
 - target_behavior should use underscore_case from the list above (abandoned_cart, lapsed_customer, high_engagement, cross_sell, new_customer, retention, reactivation)
 - All field names must match exactly as shown
 - Return ONLY the JSON - nothing before or after it
@@ -203,14 +205,41 @@ Ensure all values are specific and actionable. Use standardized terminology."""
             value=metric_value
         )
         
+        # Handle proposed_intervention - ensure it's a list
+        raw_intervention = parsed_data.get('proposed_intervention', ['discount'])
+        if isinstance(raw_intervention, list):
+            # Keep as list, ensure all items are strings
+            proposed_intervention = [str(item) for item in raw_intervention if item]
+            if not proposed_intervention:
+                proposed_intervention = ['discount']
+        elif isinstance(raw_intervention, str):
+            # Convert single string to list
+            proposed_intervention = [raw_intervention]
+            print(f"\n⚠️  Warning: LLM returned string instead of list for proposed_intervention: {raw_intervention}")
+            print(f"   Converting to list: {proposed_intervention}")
+        else:
+            proposed_intervention = ['discount']
+            print(f"\n⚠️  Warning: Unexpected type for proposed_intervention: {type(raw_intervention)}")
+            print(f"   Using default: {proposed_intervention}")
+        
+        # Handle underlying_assumptions - ensure it's a list
+        raw_assumptions = parsed_data.get('underlying_assumptions', [])
+        if isinstance(raw_assumptions, list):
+            underlying_assumptions = raw_assumptions
+        elif isinstance(raw_assumptions, str):
+            # Convert single string to list
+            underlying_assumptions = [raw_assumptions]
+        else:
+            underlying_assumptions = []
+        
         return CampaignObjectiveObject(
             campaign_goal=parsed_data.get('campaign_goal', 'conversion'),
             target_behavior=parsed_data.get('target_behavior', 'general'),
             target_subgroup=parsed_data.get('target_subgroup'),
             metric_target=metric_target,
             time_constraint=parsed_data.get('time_constraint'),
-            proposed_intervention=parsed_data.get('proposed_intervention', 'discount'),
-            underlying_assumptions=parsed_data.get('underlying_assumptions', [])
+            proposed_intervention=proposed_intervention,
+            underlying_assumptions=underlying_assumptions
         )
     
     def classify_trigger_type(self, intervention: str) -> str:

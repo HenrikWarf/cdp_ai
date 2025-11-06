@@ -27,8 +27,9 @@ An AI-first Customer Data Platform designed for a fictional home furnishing reta
 
 ### Tech Stack
 - **Data Layer**: Google BigQuery (GCP)
-- **Backend**: Python (Flask), Pandas, NumPy
-- **AI/LLM**: Google Gemini 2.5 Flash via Vertex AI
+- **Backend**: Python (Flask + FastAPI), Pandas, NumPy
+- **AI/LLM**: Google Gemini 2.5 Flash via Vertex AI + Google ADK
+- **Agent Framework**: Google ADK (Agent Development Kit) for conversational queries
 - **Frontend**: Vanilla HTML/CSS/JavaScript (Modular)
 - **Deployment**: Local development server
 
@@ -50,18 +51,23 @@ The platform consists of three main applications:
    - Trigger optimization and selection
    - Export and activation capabilities
 
-3. **💬 Conversational Analytics** (`conversational-analytics.html`)
-   - *Coming Soon* - Natural language data queries
-   - Interactive exploration of customer data
-   - AI-generated visualizations and insights
+3. **💬 Conversational Analytics** (Next.js App - `ai-cdp/`)
+   - **NEW!** Full-featured conversational interface powered by CopilotKit + Google ADK + Gemini 2.5 Flash
+   - Modern Next.js frontend with real-time state synchronization via AG-UI Protocol
+   - Chat sidebar with professional UI and data tables in main content area
+   - Natural language queries for customers, segments, and revenue trends
+   - Multi-turn conversations with context awareness
+   - Runs on FastAPI backend (port 8000) + Next.js frontend (port 3000)
+   - See `ai-cdp/README.md` and `ai-cdp/QUICKSTART.md` for setup
 
 ### Key Components
 
 1. **Campaign Intent Interpreter** - Gemini-powered natural language processor
 2. **Causal Segmentation Engine** - Uplift score simulation for trigger optimization
-3. **BigQuery Data Layer** - Synthetic customer dataset with rich behavioral attributes
-4. **REST API** - Segment activation, analysis, and overview endpoints
-5. **Modular UI** - Shared navigation and component architecture
+3. **Conversational Analytics Agent** - **NEW!** ADK-powered agent with CopilotKit frontend for natural language data queries (see `ai-cdp/`)
+4. **BigQuery Data Layer** - Synthetic customer dataset with rich behavioral attributes
+5. **REST API** - Flask (port 5000) for campaigns/segments + FastAPI (port 8000) for conversational analytics
+6. **Modular UI** - Shared navigation (HTML/CSS/JS) + Next.js app for conversational analytics
 
 ## 📊 Data Model
 
@@ -70,7 +76,7 @@ The platform consists of three main applications:
 #### `customers` (10,000 records)
 - Customer identity and demographics
 - Location data (city, country)
-- CLV scores
+- CLV scores (0-1 scale, with business-friendly interpretation)
 - Acquisition source and creation date
 
 #### `transactions` (50,000+ records)
@@ -125,7 +131,7 @@ pip install -r requirements.txt
 
 ### 2. Configure Environment Variables
 
-Create a `.env` file in the project root:
+Create a `.env` file in the project root (or copy from `env_template_chat.txt`):
 
 ```env
 # Google Cloud Configuration
@@ -133,6 +139,10 @@ GOOGLE_CLOUD_PROJECT=your-project-id
 GOOGLE_CLOUD_REGION=us-central1
 BIGQUERY_DATASET=aethersegment_cdp
 GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account-key.json
+
+# Google API Key (Required for Conversational Analytics)
+# Get from: https://aistudio.google.com/app/apikey
+GOOGLE_API_KEY=your-google-api-key-here
 
 # Flask Configuration
 FLASK_ENV=development
@@ -142,6 +152,8 @@ FLASK_PORT=5000
 # CORS Configuration
 ALLOWED_ORIGINS=*
 ```
+
+**Note**: The `GOOGLE_API_KEY` is required for the new Conversational Analytics feature.
 
 ### 3. Generate Initial Data
 
@@ -158,26 +170,72 @@ This will:
 - Create 2,000+ abandoned carts
 - Populate customer propensity scores
 
-### 4. Start the Backend
+### 4. Start All Services
 
+#### Option A: Automated Startup (Recommended)
+
+Start all services with one command:
+
+**Windows:**
+```powershell
+.\start_services.ps1
+```
+
+**Mac/Linux:**
 ```bash
-# Run the Flask application
+chmod +x start_services.sh  # First time only
+./start_services.sh
+```
+
+This will automatically start:
+- Flask API (Port 5000)
+- Chat Agent (Port 8000)
+- Frontend (Port 5500)
+- Open your browser to the application
+
+To stop all services:
+```bash
+.\stop_services.ps1    # Windows
+./stop_services.sh     # Mac/Linux
+```
+
+#### Option B: Manual Startup
+
+If you prefer to start services manually, you need **three** terminals:
+
+**Terminal 1: Main Flask API (Port 5000)**
+```bash
 python run.py
 ```
 
-Backend will be available at `http://localhost:5000`
-
-### 5. Open the Frontend
-
-Open `frontend/index.html` in your browser, or use a local server:
-
+**Terminal 2: Frontend (Port 5500)**
 ```bash
-# Using Python's built-in server
 cd frontend
-python -m http.server 8000
+python -m http.server 5500
 ```
 
-Then visit `http://localhost:8000`
+**Optional - Terminal 3: Conversational Analytics (Ports 8000 + 3000)**
+```bash
+cd ai-cdp
+npm run dev
+```
+This starts both the agent backend (port 8000) and Next.js frontend (port 3000).
+See `ai-cdp/QUICKSTART.md` for detailed setup instructions.
+
+See `RUNNING_SERVICES.md` for detailed service management guide.
+
+### 5. Access the Application
+
+If you used the automated startup scripts, your browser should open automatically to:
+```
+http://localhost:5500/index.html
+```
+
+If starting manually, the frontend will be available at the port you specified (5500 in the example above).
+
+**Alternative options for serving frontend:**
+- Use VS Code Live Server extension
+- Use Python's built-in server: `cd frontend && python -m http.server 8000`
 
 ## 🔄 Near Real-Time Event Generation
 
@@ -276,7 +334,9 @@ new product launches to drive regional sales growth"
 
 ## 📡 API Endpoints
 
-### `GET /api/v1/overview/stats`
+### Main Flask API (Port 5000)
+
+#### `GET /api/v1/overview/stats`
 Get overview dashboard statistics
 
 **Response**:
@@ -296,7 +356,7 @@ Get overview dashboard statistics
 }
 ```
 
-### `POST /api/v1/campaigns/analyze`
+#### `POST /api/v1/campaigns/analyze`
 Analyze natural language campaign objective
 
 **Request**:
@@ -315,7 +375,7 @@ Analyze natural language campaign objective
 }
 ```
 
-### `POST /api/v1/segments/preview-filters`
+#### `POST /api/v1/segments/preview-filters`
 Preview impact of additional filters
 
 **Request**:
@@ -329,7 +389,7 @@ Preview impact of additional filters
 }
 ```
 
-### `POST /api/v1/segments/create`
+#### `POST /api/v1/segments/create`
 Create final segment with trigger selection
 
 **Request**:
@@ -340,6 +400,66 @@ Create final segment with trigger selection
   "additional_filters": {...}
 }
 ```
+
+### Conversational Analytics API (Port 8000)
+
+#### `GET /health`
+Health check for chat agent
+
+**Response**:
+```json
+{
+  "status": "healthy",
+  "agent": "ready"
+}
+```
+
+#### `GET /`
+Agent information and available tools
+
+**Response**:
+```json
+{
+  "status": "healthy",
+  "agent": "cdp_analytics_agent",
+  "model": "gemini-2.5-flash",
+  "tools": 6,
+  "tool_names": [
+    "query_customers",
+    "get_customer_statistics",
+    "query_transactions",
+    "query_behavioral_events",
+    "query_abandoned_carts",
+    "get_clv_analysis"
+  ]
+}
+```
+
+#### `POST /chat`
+Send a natural language query to the agent
+
+**Request**:
+```json
+{
+  "message": "How many customers do we have?"
+}
+```
+
+**Response**:
+```json
+{
+  "status": "success",
+  "response": "Based on the data, we have 10,000 total customers...",
+  "timestamp": "2024-..."
+}
+```
+
+**Example Queries**:
+- "How many customers do we have?"
+- "Show me customers from London"
+- "What's the average CLV score?"
+- "How many abandoned carts in the last 7 days?"
+- "Which countries have the highest CLV?"
 
 ## 🧠 AI Features
 
@@ -363,6 +483,53 @@ Create final segment with trigger selection
 - Shows which filters were auto-applied by AI
 - Provides rationale for trigger recommendations
 - Displays feature importance and sample profiles
+
+### 5. CLV Score Interpretation
+- Converts raw CLV scores (0-1) into business-friendly language
+- Classifies customers into value tiers (Premium, Above Average, Average, Below Average)
+- Shows comparison to baseline and percentile rankings
+- Provides actionable insights for each segment's value profile
+
+### 6. Conversational Analytics (Google ADK + Gemini 2.5 Flash)
+- **Natural Language Queries**: Ask questions in plain English
+- **Intelligent Tool Selection**: Agent automatically chooses the right BigQuery query tool
+- **Structured Data Display**: Results shown as tables, statistics, and insights
+- **Context Awareness**: Agent understands customer data domain
+- **Six Query Tools**:
+  - `query_customers`: Search and filter customer profiles
+  - `get_customer_statistics`: Overview metrics and KPIs
+  - `query_transactions`: Transaction history analysis
+  - `query_behavioral_events`: Behavioral data exploration
+  - `query_abandoned_carts`: Cart abandonment tracking
+  - `get_clv_analysis`: CLV breakdown by country
+
+### 7. Product Affinity Intelligence
+A comprehensive product recommendation and targeting system with three levels:
+
+**Level 1: Category Affinity Scores**
+- Calculates affinity scores (0-1) for each product category based on purchase history
+- Weighted by both purchase frequency (60%) and spending (40%)
+- Tracks 10 furniture categories: Living Room, Bedroom, Kitchen & Dining, Office, Outdoor, Lighting, Storage, Textiles, Bathroom, Decoration
+
+**Level 2: Purchase Profile Enrichment**
+- **Favorite Category**: Primary product interest area
+- **Secondary Category**: Secondary interest for cross-sell opportunities
+- **Cross-Category Shopper**: Flag for customers who purchase across 3+ categories
+- **Price Tier Preference**: Budget (<$300), Mid ($300-800), Premium (>$800) based on AOV
+
+**Level 3: Product Association Rules**
+- 20+ predefined cross-sell rules based on purchasing patterns
+- Association strength (0-1) indicating likelihood of co-purchase
+- Common sequence tracking (1=immediate, 2=next purchase, 3=future)
+- Examples:
+  - Living Room → Lighting (0.75 strength)
+  - Bedroom → Textiles (0.85 strength)
+  - Office → Storage (0.82 strength)
+
+**Campaign Integration:**
+- Automatically filters segments by product affinity when mentioned in campaign objective
+- 5 product-specific campaign templates showcasing cross-sell opportunities
+- Displays customer product preferences in segment profiles with visual tags
 
 ## 🛠️ Development
 
@@ -416,6 +583,7 @@ ai_cdp/
 ### Key Files
 - `backend/models/intent_interpreter.py` - Gemini integration
 - `backend/models/causal_engine.py` - Uplift modeling
+- `backend/utils/clv_interpreter.py` - CLV score interpretation utility
 - `scripts/generate_data.py` - Furniture data generation
 - `scripts/add_realtime_events.py` - Real-time event simulator
 

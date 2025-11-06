@@ -613,3 +613,238 @@ body::after {
     color: var(--text-secondary);
     line-height: 1.6;
 }
+
+/* ============================================
+   Recommended Trigger Card
+   ============================================ */
+.recommended-trigger-card {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-xl);
+    background: linear-gradient(135deg, rgba(91, 95, 199, 0.05) 0%, rgba(139, 143, 232, 0.05) 100%);
+    border: 2px solid var(--primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.trigger-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.trigger-icon {
+    font-size: 32px;
+}
+
+.trigger-header h4 {
+    flex: 1;
+    margin: 0;
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.trigger-content {
+    padding: var(--spacing-md) 0;
+}
+
+.trigger-name {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.trigger-description {
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.6;
+}
+
+.trigger-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-lg);
+    background: white;
+    border-radius: var(--radius-md);
+}
+
+.trigger-metrics .metric {
+    text-align: center;
+}
+
+.trigger-metrics .metric-label {
+    display: block;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.trigger-metrics .metric-value {
+    display: block;
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.trigger-rationale {
+    padding: var(--spacing-lg);
+    background: white;
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--primary);
+}
+
+.trigger-rationale strong {
+    display: block;
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.trigger-rationale p {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ============================================
+   Trigger Selection UI (Step 2)
+   ============================================ */
+.trigger-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.trigger-option {
+    padding: var(--spacing-lg);
+    background: white;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.trigger-option:hover {
+    border-color: var(--primary-light);
+    box-shadow: var(--shadow-sm);
+}
+
+.trigger-option.selected {
+    border-color: var(--primary);
+    background: var(--pastel-blue);
+}
+
+.trigger-option.no-trigger {
+    border-style: dashed;
+    opacity: 0.7;
+}
+
+.trigger-option-content {
+    flex: 1;
+}
+
+.trigger-option-name {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.trigger-option-stats {
+    display: flex;
+    gap: var(--spacing-lg);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.trigger-option-stat {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.trigger-option-stat strong {
+    color: var(--primary);
+}
+
+/* ============================================
+   Compact Refine Layout
+   ============================================ */
+.refine-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.refine-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.compact-card {
+    padding: var(--spacing-md) !important;
+}
+
+.compact-card h3 {
+    font-size: var(--text-lg);
+    margin-bottom: var(--spacing-sm);
+}
+
+.compact-card h4 {
+    font-size: var(--text-base);
+    margin-bottom: var(--spacing-xs);
+}
+
+.dashboard-content-compact {
+    font-size: var(--text-sm);
+}
+
+.dashboard-content-compact .segment-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+}
+
+.dashboard-content-compact .stat-card {
+    padding: var(--spacing-sm);
+}
+
+.dashboard-content-compact .stat-value {
+    font-size: var(--text-xl);
+}
+
+.filters-review-compact {
+    font-size: var(--text-sm);
+}
+
+.filters-review-compact .filter-badge {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--text-xs);
+}
+
+.filter-preview-content-compact {
+    font-size: var(--text-sm);
+}
+
+.btn-block {
+    width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .refine-grid {
+        grid-template-columns: 1fr;
+    }
+}
