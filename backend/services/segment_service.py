@@ -127,7 +127,8 @@ class SegmentService:
     
     def create_segment(
         self,
-        campaign_objective: str,
+        campaign_objective: Optional[str] = None,
+        campaign_objective_object: Optional[Dict[str, Any]] = None,
         override_trigger: Optional[str] = None,
         additional_filters: Optional[Dict[str, Any]] = None
     ) -> SegmentResponse:
@@ -135,15 +136,26 @@ class SegmentService:
         Create a complete customer segment for activation
         
         Args:
-            campaign_objective: Natural language campaign description
+            campaign_objective: Natural language campaign description (legacy)
+            campaign_objective_object: Pre-analyzed Campaign Objective Object (preferred)
             override_trigger: Optional trigger to override AI recommendation
             additional_filters: Optional additional filters (location, CLV, etc.)
         
         Returns:
             SegmentResponse with full customer list and metadata
         """
-        # Step 1: Interpret the campaign objective
-        coo = self.intent_interpreter.interpret(campaign_objective)
+        # Step 1: Get or interpret the campaign objective
+        if campaign_objective_object:
+            # Use pre-analyzed COO to avoid re-interpretation inconsistency
+            print(f"\n🎯 Using pre-analyzed Campaign Objective Object")
+            coo = CampaignObjectiveObject(**campaign_objective_object)
+            print(f"   Goal: {coo.campaign_goal}")
+            print(f"   Target Behavior: {coo.target_behavior}")
+            print(f"   Target Subgroup: {coo.target_subgroup}")
+        else:
+            # Fallback to re-interpretation (legacy support)
+            print(f"\n⚠️  Re-interpreting campaign objective (may cause inconsistency)")
+            coo = self.intent_interpreter.interpret(campaign_objective)
         
         # Step 2: Get trigger recommendations
         sample_query = self.query_builder.build_segment_query(coo, limit=1000)
@@ -224,11 +236,15 @@ class SegmentService:
         )
         
         # Step 8: Generate segment ID and cache
-        segment_id = generate_segment_id(campaign_objective)
+        # Use COO data for segment ID instead of campaign_objective string (which can be None)
+        id_seed = f"{coo.campaign_goal}_{coo.target_behavior}"
+        if coo.target_subgroup:
+            id_seed += f"_{coo.target_subgroup}"
+        segment_id = generate_segment_id(id_seed)
         
         response = SegmentResponse(
             segment_id=segment_id,
-            campaign_objective_ref=campaign_objective,
+            campaign_objective_ref=campaign_objective or f"{coo.campaign_goal}: {coo.target_behavior}",
             query_timestamp=datetime.utcnow(),
             estimated_size=len(customer_profiles),
             criteria_used=segment_query,
@@ -576,6 +592,87 @@ class SegmentService:
                     can_modify=True
                 ))
             
+            # Product affinity filters (NEW)
+            category_affinity_map = {
+                'living_room': 'Living Room',
+                'living': 'Living Room',
+                'sofa': 'Living Room',
+                'bedroom': 'Bedroom',
+                'bed': 'Bedroom',
+                'kitchen': 'Kitchen & Dining',
+                'dining': 'Kitchen & Dining',
+                'office': 'Office',
+                'desk': 'Office',
+                'outdoor': 'Outdoor',
+                'patio': 'Outdoor',
+                'lighting': 'Lighting',
+                'lamp': 'Lighting',
+                'storage': 'Storage',
+                'textiles': 'Textiles',
+                'bathroom': 'Bathroom',
+                'decoration': 'Decoration'
+            }
+            
+            search_text = ""
+            if coo.target_subgroup:
+                search_text += coo.target_subgroup.lower() + " "
+            if coo.target_behavior:
+                search_text += coo.target_behavior.lower() + " "
+            
+            # Check for product category keywords
+            for keyword, category_name in category_affinity_map.items():
+                if keyword in search_text:
+                    # Map keyword back to affinity column name
+                    affinity_col_map = {
+                        'Living Room': 'living_room_affinity',
+                        'Bedroom': 'bedroom_affinity',
+                        'Kitchen & Dining': 'kitchen_dining_affinity',
+                        'Office': 'office_affinity',
+                        'Outdoor': 'outdoor_affinity',
+                        'Lighting': 'lighting_affinity',
+                        'Storage': 'storage_affinity',
+                        'Textiles': 'textiles_affinity',
+                        'Bathroom': 'bathroom_affinity',
+                        'Decoration': 'decoration_affinity'
+                    }
+                    affinity_col = affinity_col_map.get(category_name, f"{keyword}_affinity")
+                    print(f"   ✓ Adding product affinity filter: {affinity_col} >= 0.3")
+                    ai_filters.append(AIFilter(
+                        filter_type="product_affinity",
+                        description=f"Product Interest: {category_name} (affinity ≥ 30%)",
+                        sql_condition=f"cs.{affinity_col} >= 0.3",
+                        can_modify=True
+                    ))
+                    break  # Only one product filter per campaign
+            
+            # Cross-category shopper filter
+            if 'cross' in search_text or 'multiple' in search_text or 'various' in search_text:
+                print(f"   ✓ Adding cross-category shopper filter")
+                ai_filters.append(AIFilter(
+                    filter_type="product_affinity",
+                    description="Shopping Behavior: Cross-Category Shopper",
+                    sql_condition="cs.cross_category_shopper = true",
+                    can_modify=True
+                ))
+            
+            # Price tier filters
+            if 'premium' in search_text or 'luxury' in search_text or 'high-end' in search_text:
+                print(f"   ✓ Adding premium tier filter")
+                ai_filters.append(AIFilter(
+                    filter_type="product_affinity",
+                    description="Price Preference: Premium Tier",
+                    sql_condition="cs.price_tier_preference = 'premium'",
+                    can_modify=True
+                ))
+            elif 'budget' in search_text or 'affordable' in search_text or 'value' in search_text:
+                print(f"   ✓ Adding budget tier filter")
+                ai_filters.append(AIFilter(
+                    filter_type="product_affinity",
+                    description="Price Preference: Budget Tier",
+                    sql_condition="cs.price_tier_preference = 'budget'",
+                    can_modify=True
+                ))
+            
             print(f"   📝 Total AI filters extracted: {len(ai_filters)}")
             return ai_filters
         except Exception as e:
@@ -850,25 +947,13 @@ class SegmentService:
             'description': f"Goal: {coo.campaign_goal.replace('_', ' ').title()} campaign targeting {coo.target_behavior.replace('_', ' ')} behavior"
         })
         
-        # Step 2: AI Behavioral Filters
+        # Step 2: AI Behavioral Filters - Use extracted filters for completeness
+        ai_filters = self._extract_ai_filters(coo)
         ai_filter_desc = []
-        if coo.target_behavior:
-            behavior_labels = {
-                'abandoned_cart': 'Abandoned cart in last 7 days',
-                'lapsed_customer': 'High churn risk customers (churn score > 60%)',
-                'high_engagement': 'High engagement customers (engagement score > 70%)',
-                'cross_sell': 'Recent product purchasers (last 30 days)',
-                'new_customer': 'New customers (acquired in last 7 days)',
-                'retention': 'At-risk retention (30-90 days since last purchase)',
-                'reactivation': 'Dormant customers (high churn probability)'
-            }
-            ai_filter_desc.append(behavior_labels.get(coo.target_behavior, f'{coo.target_behavior} behavior'))
         
-        if coo.target_subgroup and "high_value" in coo.target_subgroup.lower():
-            ai_filter_desc.append('High CLV customers (top 25%, score ≥ 75%)')
-        
-        if coo.target_behavior == "abandoned_cart":
-            ai_filter_desc.append('Above-average cart value')
+        # Group filters by type for better display
+        for filter_obj in ai_filters:
+            ai_filter_desc.append(filter_obj.description)
         
         if ai_filter_desc:
             filtering_steps.append({

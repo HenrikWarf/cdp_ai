@@ -768,11 +768,18 @@
     display: inline-block;
 }
 
+.accordion-group-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+    margin-left: var(--spacing-sm);
+}
+
 .accordion-label {
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 600;
     color: var(--text-primary);
     flex: 1;
+    margin-left: var(--spacing-sm);
 }
 
 .accordion-count {
@@ -784,26 +791,28 @@
 }
 
 .accordion-content {
-    padding: 0 var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
 }
 
 /* ============================================
-   Campaign Cards
+   Campaign Cards - Compact Layout
    ============================================ */
 .campaign-card {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
     border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-lg);
-    transition: all 0.3s ease;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: var(--spacing-md);
     position: relative;
     overflow: hidden;
+    cursor: pointer;
+    min-height: 80px;
 }
 
 .campaign-card::before {
@@ -811,77 +820,220 @@
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    height: 3px;
+    bottom: 0;
+    width: 3px;
     background: var(--primary-gradient);
-    transform: scaleX(0);
-    transition: transform 0.3s ease;
+    transform: scaleY(0);
+    transition: transform 0.2s ease;
 }
 
 .campaign-card:hover::before {
-    transform: scaleX(1);
+    transform: scaleY(1);
 }
 
 .campaign-card:hover {
     border-color: var(--primary-color);
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+    transform: translateX(2px);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
 }
 
-.campaign-card .card-header {
+/* Card Left - Metrics Only (Vertical Stack) */
+.campaign-card .card-left {
     display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 100px;
+    padding-right: var(--spacing-md);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Metrics - Stacked Vertically */
+.campaign-card .card-metrics-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     align-items: flex-start;
+}
+
+.campaign-card .metric-compact {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.campaign-card .metric-compact .metric-icon {
+    font-size: 1rem;
+    line-height: 1;
+    width: 1rem;
+    text-align: center;
+}
+
+.campaign-card .metric-compact .metric-value {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Card Content - Aligned */
+.campaign-card .card-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0 var(--spacing-md);
+}
+
+.campaign-card .card-header-compact {
+    display: flex;
+    align-items: baseline;
     gap: var(--spacing-sm);
-    padding-bottom: var(--spacing-sm);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-wrap: wrap;
+    min-height: 1.3rem;
 }
 
 .campaign-card .card-title {
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
-    flex: 1;
+    line-height: 1.3;
 }
 
-.campaign-card .card-description {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    line-height: 1.6;
-    margin: 0;
+.campaign-card .card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
 }
 
-.campaign-card .card-objective {
-    background: white;
-    padding: var(--spacing-md);
-    border-radius: var(--radius-md);
-    border: 1px solid var(--primary-color);
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
-    flex: 1;
-}
-
-.campaign-card .objective-label {
-    font-size: 0.75rem;
-    color: var(--primary-color);
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
+/* Badge Styles - Compact */
+.card-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.65rem;
     font-weight: 600;
-    display: block;
-    margin-bottom: var(--spacing-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
-.campaign-card .objective-text {
-    font-size: 0.9rem;
-    color: #1a1a1a;
-    line-height: 1.6;
-    display: block;
+.badge-conversion {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.badge-retention {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.badge-revenue {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+}
+
+.badge-acquisition {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    color: white;
+}
+
+.badge-highvalue {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #78350f;
+}
+
+.badge-product {
+    background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+    color: white;
+}
+
+.badge-loyalty {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+}
+
+.badge-content {
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    color: white;
+}
+
+.badge-bundle {
+    background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+    color: white;
+}
+
+.badge-urgency {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+}
+
+.badge-seasonal {
+    background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%);
+    color: white;
+}
+
+.badge-general {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+/* Card Description - Compact (Fixed Height) */
+.campaign-card .card-description {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 1.4rem;
+}
+
+/* Card Objective - Compact Inline (Fixed Height) */
+.campaign-card .card-objective-compact {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.8rem;
+}
+
+.campaign-card .card-objective-compact strong {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Card Action - Button (Fixed Width for Alignment) */
+.campaign-card .card-action {
+    flex-shrink: 0;
+    width: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
 }
 
 .campaign-card .btn-use-template {
-    align-self: flex-start;
-    min-width: 160px;
-    margin-top: auto;
+    white-space: nowrap;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.campaign-card .btn-use-template:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
 
 /* ============================================
@@ -1047,8 +1199,36 @@
     }
     
     /* Campaign Templates & Builder Responsive */
-    .accordion-content {
-        grid-template-columns: 1fr;
+    .campaign-card {
+        flex-direction: column;
+        align-items: flex-start;
+        min-height: auto;
+    }
+    
+    .campaign-card .card-left {
+        width: 100%;
+        justify-content: flex-start;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        padding-right: 0;
+        padding-bottom: var(--spacing-sm);
+    }
+    
+    .campaign-card .card-metrics-compact {
+        flex-direction: row;
+        gap: var(--spacing-md);
+    }
+    
+    .campaign-card .card-content {
+        padding-right: 0;
+    }
+    
+    .campaign-card .card-action {
+        width: 100%;
+    }
+    
+    .campaign-card .btn-use-template {
+        width: 100%;
     }
     
     .mode-toggle {

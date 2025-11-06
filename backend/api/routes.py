@@ -82,8 +82,10 @@ def create_segment():
     
     Request Body:
         {
-            "campaign_objective": "Natural language campaign description",
-            "override_trigger": "optional trigger name"
+            "campaign_objective": "Natural language campaign description",  # Legacy
+            "campaign_objective_object": {...},  # Preferred - pre-analyzed COO
+            "override_trigger": "optional trigger name",
+            "additional_filters": {...}
         }
     
     Returns:
@@ -92,20 +94,21 @@ def create_segment():
     try:
         data = request.get_json()
         
-        if not data or 'campaign_objective' not in data:
+        if not data:
             return jsonify({
                 'error': 'Bad Request',
-                'message': 'Missing required field: campaign_objective'
+                'message': 'Request body is required'
             }), 400
         
         # Validate request
         segment_request = SegmentCreateRequest(**data)
         
-        # Create segment
+        # Create segment - prefer COO over string
         result = segment_service.create_segment(
-            segment_request.campaign_objective,
-            segment_request.override_trigger,
-            segment_request.additional_filters
+            campaign_objective=segment_request.campaign_objective,
+            campaign_objective_object=segment_request.campaign_objective_object,
+            override_trigger=segment_request.override_trigger,
+            additional_filters=segment_request.additional_filters
         )
         
         # Convert to dict for JSON response

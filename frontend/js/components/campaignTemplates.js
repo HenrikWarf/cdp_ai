@@ -46,6 +46,17 @@ export class CampaignTemplatesComponent {
         const accordion = document.createElement('div');
         accordion.className = 'campaign-accordion';
         accordion.dataset.group = groupKey;
+        
+        // Get group icon
+        const groupIcons = {
+            'abandoned_cart': '🛒',
+            'winback': '🔄',
+            'cross_sell': '🔀',
+            'new_customer': '👋',
+            'vip_highvalue': '⭐',
+            'product_specific': '🏠'
+        };
+        const groupIcon = groupIcons[groupKey] || '📋';
 
         // Accordion header
         const header = document.createElement('div');
@@ -53,6 +64,7 @@ export class CampaignTemplatesComponent {
         header.innerHTML = `
             <div class="accordion-title">
                 <span class="accordion-icon">▶</span>
+                <span class="accordion-group-icon">${groupIcon}</span>
                 <span class="accordion-label">${group.title}</span>
                 <span class="accordion-count">${group.campaigns.length} templates</span>
             </div>
@@ -83,18 +95,44 @@ export class CampaignTemplatesComponent {
     createCampaignCard(campaign) {
         const card = document.createElement('div');
         card.className = 'campaign-card';
+        
+        // Get campaign metadata (icon, badges, etc.)
+        const metadata = this.getCampaignMetadata(campaign);
+        
         card.innerHTML = `
-            <div class="card-header">
-                <h4 class="card-title">${campaign.title}</h4>
+            <div class="card-left">
+                <div class="card-metrics-compact">
+                    <div class="metric-compact">
+                        <span class="metric-icon">📈</span>
+                        <span class="metric-value">${metadata.uplift}</span>
+                    </div>
+                    <div class="metric-compact">
+                        <span class="metric-icon">⚡</span>
+                        <span class="metric-value">${metadata.difficulty}</span>
+                    </div>
+                    <div class="metric-compact">
+                        <span class="metric-icon">🎯</span>
+                        <span class="metric-value">${metadata.targetSize}</span>
+                    </div>
+                </div>
             </div>
-            <p class="card-description">${campaign.description}</p>
-            <div class="card-objective">
-                <span class="objective-label">Campaign:</span>
-                <span class="objective-text">${campaign.fullObjective}</span>
+            
+            <div class="card-content">
+                <div class="card-header-compact">
+                    <h4 class="card-title">${campaign.title}</h4>
+                    <div class="card-badges">${metadata.badges}</div>
+                </div>
+                <p class="card-description">${campaign.description}</p>
+                <div class="card-objective-compact">
+                    <strong>Goal:</strong> ${campaign.fullObjective}
+                </div>
             </div>
-            <button class="btn-use-template btn btn-primary btn-sm" data-campaign-id="${campaign.id}">
-                Use This Template
-            </button>
+            
+            <div class="card-action">
+                <button class="btn-use-template btn btn-primary btn-sm" data-campaign-id="${campaign.id}">
+                    Use Template
+                </button>
+            </div>
         `;
 
         // Add click handler for "Use Template" button
@@ -105,6 +143,52 @@ export class CampaignTemplatesComponent {
         });
 
         return card;
+    }
+    
+    getCampaignMetadata(campaign) {
+        // Define metadata for different campaign types
+        const metadata = {
+            // Abandoned Cart campaigns
+            'cart_discount': { icon: '🛒', uplift: '20-25%', difficulty: 'Easy', targetSize: 'Medium', badges: '<span class="card-badge badge-conversion">Conversion</span>' },
+            'cart_shipping': { icon: '🛒', uplift: '25-30%', difficulty: 'Easy', targetSize: 'Small', badges: '<span class="card-badge badge-conversion">Conversion</span><span class="card-badge badge-highvalue">High-Value</span>' },
+            'cart_urgency': { icon: '🛒', uplift: '15-20%', difficulty: 'Medium', targetSize: 'Medium', badges: '<span class="card-badge badge-conversion">Conversion</span><span class="card-badge badge-urgency">Urgency</span>' },
+            
+            // Win-back campaigns
+            'winback_exclusive': { icon: '🔄', uplift: '12-15%', difficulty: 'Medium', targetSize: 'Large', badges: '<span class="card-badge badge-retention">Retention</span>' },
+            'winback_new_products': { icon: '🔄', uplift: '10-12%', difficulty: 'Medium', targetSize: 'Large', badges: '<span class="card-badge badge-retention">Retention</span><span class="card-badge badge-content">Content</span>' },
+            'winback_vip': { icon: '🔄', uplift: '20-25%', difficulty: 'Hard', targetSize: 'Small', badges: '<span class="card-badge badge-retention">Retention</span><span class="card-badge badge-highvalue">VIP</span>' },
+            
+            // Cross-sell campaigns
+            'crosssell_complementary': { icon: '🔀', uplift: '18-20%', difficulty: 'Easy', targetSize: 'Medium', badges: '<span class="card-badge badge-revenue">Revenue</span><span class="card-badge badge-product">Product</span>' },
+            'crosssell_category': { icon: '🔀', uplift: '20-25%', difficulty: 'Medium', targetSize: 'Medium', badges: '<span class="card-badge badge-revenue">Revenue</span><span class="card-badge badge-product">Product</span>' },
+            'crosssell_bundle': { icon: '🔀', uplift: '25-30%', difficulty: 'Medium', targetSize: 'Large', badges: '<span class="card-badge badge-revenue">Revenue</span><span class="card-badge badge-bundle">Bundle</span>' },
+            
+            // New customer campaigns
+            'welcome_discount': { icon: '👋', uplift: '25-30%', difficulty: 'Easy', targetSize: 'Medium', badges: '<span class="card-badge badge-acquisition">Acquisition</span>' },
+            'onboarding_content': { icon: '👋', uplift: '30-40%', difficulty: 'Hard', targetSize: 'Medium', badges: '<span class="card-badge badge-acquisition">Acquisition</span><span class="card-badge badge-content">Content</span>' },
+            'early_loyalty': { icon: '👋', uplift: '20-25%', difficulty: 'Easy', targetSize: 'Small', badges: '<span class="card-badge badge-acquisition">Acquisition</span><span class="card-badge badge-loyalty">Loyalty</span>' },
+            
+            // VIP/High-value campaigns
+            'vip_launch': { icon: '⭐', uplift: '15-20%', difficulty: 'Medium', targetSize: 'Small', badges: '<span class="card-badge badge-highvalue">VIP</span><span class="card-badge badge-product">Product Launch</span>' },
+            'vip_retention': { icon: '⭐', uplift: '25-30%', difficulty: 'Hard', targetSize: 'Small', badges: '<span class="card-badge badge-highvalue">VIP</span><span class="card-badge badge-loyalty">Loyalty</span>' },
+            'vip_sale_access': { icon: '⭐', uplift: '30-35%', difficulty: 'Medium', targetSize: 'Small', badges: '<span class="card-badge badge-highvalue">VIP</span><span class="card-badge badge-urgency">Exclusive</span>' },
+            
+            // Product-specific campaigns
+            'living_room_cross_sell': { icon: '🛋️', uplift: '25-30%', difficulty: 'Medium', targetSize: 'Medium', badges: '<span class="card-badge badge-product">Living Room</span><span class="card-badge badge-revenue">Cross-Sell</span>' },
+            'bedroom_collection': { icon: '🛏️', uplift: '20-25%', difficulty: 'Medium', targetSize: 'Medium', badges: '<span class="card-badge badge-product">Bedroom</span><span class="card-badge badge-bundle">Bundle</span>' },
+            'office_wfh': { icon: '💼', uplift: '15-20%', difficulty: 'Hard', targetSize: 'Large', badges: '<span class="card-badge badge-product">Office</span><span class="card-badge badge-content">WFH</span>' },
+            'seasonal_outdoor': { icon: '🌳', uplift: '20-25%', difficulty: 'Medium', targetSize: 'Medium', badges: '<span class="card-badge badge-product">Outdoor</span><span class="card-badge badge-seasonal">Seasonal</span>' },
+            'lighting_refresh': { icon: '💡', uplift: '25-30%', difficulty: 'Easy', targetSize: 'Large', badges: '<span class="card-badge badge-product">Lighting</span><span class="card-badge badge-revenue">Cross-Sell</span>' }
+        };
+        
+        // Return metadata or defaults
+        return metadata[campaign.id] || { 
+            icon: '📋', 
+            uplift: '15-20%', 
+            difficulty: 'Medium', 
+            targetSize: 'Medium',
+            badges: '<span class="card-badge badge-general">General</span>'
+        };
     }
 
     toggleAccordion(accordion, header, content) {

@@ -619,52 +619,65 @@ class AetherSegmentApp {
     }
 
     async showActivateSegment() {
-        // Apply manual filters to get final segment data
-        if (this.currentAnalysis && this.appliedFilters && Object.keys(this.appliedFilters).length > 0) {
-            try {
-                console.log('📋 Applying manual filters before activation:', this.appliedFilters);
-                
-                // Fetch final segment with manual filters + trigger
-                const preview = await apiClient.previewFilters(
-                    this.currentAnalysis.campaign_objective_object,
-                    this.appliedFilters,
-                    this.selectedTrigger ? this.selectedTrigger.trigger_name : null
-                );
-                
-                console.log('✅ Final segment with filters:', {
-                    size: preview.final_size,
-                    clv: preview.final_avg_clv,
-                    filters: Object.keys(this.appliedFilters)
-                });
+        // ALWAYS ensure we have the latest segment data with trigger filter
+        try {
+            console.log('📋 Fetching final segment state for Step 4');
+            console.log('   Current metadata size:', this.currentSegmentMetadata?.estimated_size);
+            console.log('   Selected trigger:', this.selectedTrigger?.trigger_name);
+            console.log('   Applied filters:', Object.keys(this.appliedFilters || {}));
+            
+            // Fetch final segment with ALL applied filters + trigger
+            const preview = await apiClient.previewFilters(
+                this.currentAnalysis.campaign_objective_object,
+                this.appliedFilters || {},  // Include manual filters if any
+                this.selectedTrigger ? this.selectedTrigger.trigger_name : null
+            );
+            
+            console.log('✅ Final segment for Step 4:', {
+                size: preview.final_size,
+                clv: preview.final_avg_clv,
+                manual_filters_applied: Object.keys(this.appliedFilters || {}).length > 0
+            });
 
-                // Calculate predicted uplift and ROI
-                let predicted_uplift = 0;
-                let predicted_roi = '3-5x';
+            // Calculate predicted uplift and ROI
+            let predicted_uplift = 0;
+            let predicted_roi = '3-5x';
+            
+            if (this.selectedTrigger) {
+                predicted_uplift = this.selectedTrigger.predicted_uplift;
+                const roi_score = (this.selectedTrigger.predicted_uplift * this.selectedTrigger.confidence_score) * 100;
                 
-                if (this.selectedTrigger) {
-                    predicted_uplift = this.selectedTrigger.predicted_uplift;
-                    const roi_score = (this.selectedTrigger.predicted_uplift * this.selectedTrigger.confidence_score) * 100;
-                    
-                    if (roi_score >= 70) predicted_roi = '5-8x';
-                    else if (roi_score >= 60) predicted_roi = '4-6x';
-                    else if (roi_score >= 50) predicted_roi = '3-5x';
-                    else if (roi_score >= 40) predicted_roi = '2-4x';
-                    else predicted_roi = '1-3x';
-                }
-
-                // Update current metadata with filtered results
-                this.currentSegmentMetadata = {
-                    ...this.currentSegmentMetadata,
-                    estimated_size: preview.final_size,
-                    avg_clv_score: preview.final_avg_clv,
-                    avg_cart_value: preview.final_avg_cart_value,
-                    predicted_uplift: predicted_uplift,
-                    predicted_roi: predicted_roi
-                };
-            } catch (error) {
-                console.error('❌ Failed to apply filters:', error);
-                showToast('Failed to apply filters', 'error');
+                if (roi_score >= 70) predicted_roi = '5-8x';
+                else if (roi_score >= 60) predicted_roi = '4-6x';
+                else if (roi_score >= 50) predicted_roi = '3-5x';
+                else if (roi_score >= 40) predicted_roi = '2-4x';
+                else predicted_roi = '1-3x';
+            } else {
+                // Use base prediction if no trigger
+                predicted_uplift = this.currentAnalysis.segment_preview.predicted_uplift || 0;
+                predicted_roi = this.currentAnalysis.segment_preview.predicted_roi || '3-5x';
             }
+
+            // Update metadata with CURRENT state
+            this.currentSegmentMetadata = {
+                ...this.currentSegmentMetadata,
+                estimated_size: preview.final_size,
+                avg_clv_score: preview.final_avg_clv,
+                avg_cart_value: preview.final_avg_cart_value,
+                predicted_uplift: predicted_uplift,
+                predicted_roi: predicted_roi,
+                demographic_breakdown: preview.demographic_breakdown
+            };
+            
+            console.log('💾 Updated metadata for Step 4:', {
+                size: this.currentSegmentMetadata.estimated_size,
+                clv: this.currentSegmentMetadata.avg_clv_score
+            });
+            
+        } catch (error) {
+            console.error('❌ Failed to fetch final segment state:', error);
+            showToast('Failed to load segment data', 'error');
+            // Continue with existing metadata rather than blocking
         }
 
         // Render final overview in Step 4
@@ -679,6 +692,9 @@ class AetherSegmentApp {
                     false  // Don't show demographics/product categories
                 );
             }
+            
+            // Display filters in Step 4
+            this.displayFinalFilters();
         }
 
         this.campaignInputSection.style.display = 'none';
@@ -687,6 +703,68 @@ class AetherSegmentApp {
         this.activateSegmentSection.style.display = 'block';
         this.segmentDetailsSection.style.display = 'none';
         setTimeout(() => scrollToElement(this.activateSegmentSection), 100);
+    }
+    
+    displayFinalFilters() {
+        const finalFiltersDisplay = document.getElementById('final-filters-display');
+        if (!finalFiltersDisplay) return;
+        
+        let html = '';
+        
+        // Show AI behavior filters
+        if (this.currentAnalysis.segment_preview.ai_filters && this.currentAnalysis.segment_preview.ai_filters.length > 0) {
+            html += this.currentAnalysis.segment_preview.ai_filters.map(filter => `
+                <div class="filter-badge ai-filter">
+                    <strong>${filter.filter_type}:</strong> ${filter.description}
+                </div>
+            `).join('');
+        }
+        
+        // Show trigger filter if applied
+        if (this.selectedTrigger) {
+            html += `
+                <div class="filter-badge ai-filter" style="border-left-color: var(--success-color);">
+                    <strong>🎯 Trigger Filter:</strong> ${this.selectedTrigger.trigger_name.replace(/_/g, ' ')} 
+                    (sensitivity > 65%, ${Math.round(this.selectedTrigger.predicted_uplift * 100)}% predicted uplift)
+                </div>
+            `;
+        }
+        
+        // Show manual filters if applied
+        if (this.appliedFilters && Object.keys(this.appliedFilters).length > 0) {
+            Object.entries(this.appliedFilters).forEach(([key, value]) => {
+                if (value) {
+                    let label = '';
+                    let displayValue = value;
+                    
+                    if (key === 'location_country') {
+                        label = 'Country';
+                    } else if (key === 'location_city') {
+                        label = 'City';
+                    } else if (key === 'clv_min') {
+                        label = 'Minimum CLV';
+                        displayValue = `${Math.round(parseFloat(value) * 100)}%`;
+                    } else if (key === 'cart_value_min') {
+                        label = 'Minimum Cart Value';
+                        displayValue = `$${parseFloat(value).toFixed(2)}`;
+                    } else {
+                        label = key.replace(/_/g, ' ');
+                    }
+                    
+                    html += `
+                        <div class="filter-badge" style="border-left-color: var(--primary-color);">
+                            <strong>👤 ${label}:</strong> ${displayValue}
+                        </div>
+                    `;
+                }
+            });
+        }
+        
+        if (!html) {
+            html = '<p class="text-secondary">No additional filters applied</p>';
+        }
+        
+        finalFiltersDisplay.innerHTML = html;
     }
 
     async handleTriggerSelection(trigger) {
@@ -1036,9 +1114,10 @@ class AetherSegmentApp {
             // Use selectedTrigger from state (set during trigger selection step)
             const selectedTrigger = this.selectedTrigger ? this.selectedTrigger.trigger_name : null;
 
-            // Create segment with trigger and applied filters
+            // Create segment with COO (to avoid re-interpretation), trigger, and applied filters
             const segment = await apiClient.createSegment(
-                this.currentCampaignObjective,
+                this.currentCampaignObjective,  // Fallback string
+                this.currentAnalysis.campaign_objective_object,  // Pre-analyzed COO (preferred)
                 selectedTrigger,
                 this.appliedFilters
             );

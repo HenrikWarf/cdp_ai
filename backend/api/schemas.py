@@ -181,9 +181,17 @@ class CampaignAnalysisResponse(BaseModel):
 
 class SegmentCreateRequest(BaseModel):
     """Request to create a new segment"""
-    campaign_objective: str
+    campaign_objective: Optional[str] = None  # For backwards compatibility
+    campaign_objective_object: Optional[Dict[str, Any]] = None  # NEW: Accept pre-analyzed COO
     override_trigger: Optional[str] = None
     additional_filters: Optional[Dict[str, Any]] = None
+    
+    @model_validator(mode='after')
+    def validate_campaign_input(self):
+        """Ensure either campaign_objective or campaign_objective_object is provided"""
+        if not self.campaign_objective and not self.campaign_objective_object:
+            raise ValueError("Either campaign_objective or campaign_objective_object must be provided")
+        return self
 
 
 class ErrorResponse(BaseModel):

@@ -56,8 +56,19 @@ class ApiClient {
      * Create a customer segment
      * POST /segments/create
      */
-    async createSegment(campaignObjective, overrideTrigger = null, additionalFilters = null) {
-        const body = { campaign_objective: campaignObjective };
+    async createSegment(campaignObjective, campaignObjectiveObject = null, overrideTrigger = null, additionalFilters = null) {
+        const body = {};
+        
+        // Prefer COO over string to avoid re-interpretation inconsistency
+        if (campaignObjectiveObject) {
+            body.campaign_objective_object = campaignObjectiveObject;
+            console.log('📤 Sending pre-analyzed COO to backend (avoids re-interpretation)');
+        } else {
+            // Fallback to string (legacy)
+            body.campaign_objective = campaignObjective;
+            console.log('⚠️ Sending campaign string to backend (may cause re-interpretation inconsistency)');
+        }
+        
         if (overrideTrigger) {
             body.override_trigger = overrideTrigger;
         }
