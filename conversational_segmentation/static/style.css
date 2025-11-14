@@ -1,0 +1,120 @@
+
+body {
+    background-color: #f8f9fa;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+#root {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.chat-container {
+    width: 80%;
+    max-width: 800px;
+    height: 90vh;
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.chat-header {
+    background: linear-gradient(135deg, #6e8efb, #a777e3);
+    color: white;
+    padding: 1.25rem;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
+}
+
+.message-list {
+    flex-grow: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.message {
+    max-width: 75%;
+    padding: 0.75rem 1.25rem;
+    border-radius: 20px;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+    word-wrap: break-word;
+}
+
+.message.user {
+    background-color: #6e8efb;
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 5px;
+}
+
+.message.agent {
+    background-color: #e9ecef;
+    color: #333;
+    align-self: flex-start;
+    border-bottom-left-radius: 5px;
+}
+
+.message-author {
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 0.8rem;
+    color: #888;
+}
+
+/* Style for the user's author icon */
+.message.user .message-author {
+    font-size: 0; /* Hide the text 'You' */
+    width: 24px;
+    height: 24px;
+    background-color: rgba(255, 255, 255, 0.8); /* Color of the icon */
+    -webkit-mask-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>');
+    mask-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>');
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
+.message.agent .message-author {
+    color: #555;
+}
+
+.message-input-form {
+    display: flex;
+    padding: 1.5rem;
+    border-top: 1px solid #ddd;
+    background-color: #f8f9fa;
+}
+
+.message-input-form .form-control {
+    border-radius: 20px;
+    border-color: #ccc;
+}
+
+.message-input-form .btn {
+    border-radius: 20px;
+    margin-left: 10px;
+}
+
+.status-indicator {
+    padding: 0.5rem 1.5rem;
+    font-style: italic;
+    color: #888;
+    text-align: center;
+    height: 40px; /* Reserve space to prevent layout shifts */
+}
