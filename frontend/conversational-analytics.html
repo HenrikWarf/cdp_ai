@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversational Segmentation - AetherSegment AI</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/overview.css">
+    <style>
+        .analytics-hero {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        .hero-icon {
+            font-size: 80px;
+            margin-bottom: 24px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero-title {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .capabilities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 60px;
+            text-align: left;
+        }
+
+        .capability-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .capability-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(91, 95, 199, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .capability-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .capability-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .capability-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .launch-button-container {
+            margin-top: 60px;
+        }
+
+        .btn-launch {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            padding: 20px 48px;
+            font-size: 20px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(91, 95, 199, 0.3);
+            text-decoration: none;
+        }
+
+        .btn-launch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(91, 95, 199, 0.4);
+        }
+
+        .btn-launch:active {
+            transform: translateY(0);
+        }
+
+        .launch-icon {
+            font-size: 24px;
+        }
+
+        .info-note {
+            margin-top: 24px;
+            padding: 16px 24px;
+            background: var(--pastel-blue);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: inline-block;
+        }
+
+        .info-icon {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <div id="main-nav"></div>
+
+    <!-- Main Content -->
+    <div class="page-container">
+        <!-- Hero Section -->
+        <div class="analytics-hero">
+            <div class="hero-icon">💬</div>
+            <h1 class="hero-title">Conversational Segmentation</h1>
+            <p class="hero-subtitle">
+                Discover and analyze customer segments through natural conversation. 
+                Ask questions about your customers, explore behavioral patterns, and identify high-value segments using AI-powered conversational insights.
+            </p>
+
+            <!-- Capabilities Grid -->
+            <div class="capabilities-grid">
+                <div class="capability-card">
+                    <div class="capability-icon">🎯</div>
+                    <div class="capability-title">Segment Discovery</div>
+                    <div class="capability-description">
+                        Ask "Who are my high-value customers?" or "Find customers likely to churn" - discover meaningful segments through natural conversation.
+                    </div>
+                </div>
+
+                <div class="capability-card">
+                    <div class="capability-icon">📊</div>
+                    <div class="capability-title">Visual Segment Analysis</div>
+                    <div class="capability-description">
+                        Automatically visualize segment distributions, customer behaviors, and purchase patterns with dynamic charts and tables.
+                    </div>
+                </div>
+
+                <div class="capability-card">
+                    <div class="capability-icon">💡</div>
+                    <div class="capability-title">Behavioral Insights</div>
+                    <div class="capability-description">
+                        Explore customer purchase history, engagement patterns, and lifetime value through interactive conversational queries.
+                    </div>
+                </div>
+
+                <div class="capability-card">
+                    <div class="capability-icon">🔍</div>
+                    <div class="capability-title">Deep Segmentation</div>
+                    <div class="capability-description">
+                        Dive deep into customer characteristics - analyze by geography, product affinity, shopping frequency, and custom attributes.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Launch Button -->
+            <div class="launch-button-container">
+                <button class="btn-launch" onclick="window.open('http://localhost:8001', '_blank')">
+                    <span class="launch-icon">🚀</span>
+                    <span>Start Conversational Segmentation</span>
+                </button>
+            </div>
+
+            <!-- Info Note -->
+            <div class="info-note">
+                <span class="info-icon">ℹ️</span>
+                Opens in a new tab. Explore your customer segments through natural language conversations.
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module">
+        // Import and render navigation
+        import { NavigationComponent } from './js/components/Navigation.js';
+        const nav = new NavigationComponent();
+        nav.render();
+    </script>
+</body>
+</html>
+

@@ -51,7 +51,7 @@ function Test-Port {
 # Check if ports are available
 $portsInUse = @()
 if (Test-Port 5000) { $portsInUse += "5000 (Flask API)" }
-if (Test-Port 8000) { $portsInUse += "8000 (Chat Agent)" }
+if (Test-Port 8001) { $portsInUse += "8001 (Conversational Segmentation)" }
 if (Test-Port 5500) { $portsInUse += "5500 (Frontend)" }
 
 if ($portsInUse.Count -gt 0) {
@@ -77,10 +77,10 @@ $flaskCmd = "cd '$PWD'; if (Test-Path 'venv\Scripts\Activate.ps1') { .\venv\Scri
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $flaskCmd
 Start-Sleep -Seconds 2
 
-# Start Chat Agent (Port 8000) in new window
-Write-Host "2. Starting Chat Agent (Port 8000)..." -ForegroundColor Yellow
-$chatCmd = "cd '$PWD'; if (Test-Path 'venv\Scripts\Activate.ps1') { .\venv\Scripts\Activate.ps1 }; Write-Host ''; Write-Host '========================================' -ForegroundColor Cyan; Write-Host '  Chat Agent (Port 8000)' -ForegroundColor Cyan; Write-Host '========================================' -ForegroundColor Cyan; Write-Host ''; python run_chat.py"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", $chatCmd
+# Start Conversational Segmentation Agent (Port 8001) in new window
+Write-Host "2. Starting Conversational Segmentation Agent (Port 8001)..." -ForegroundColor Yellow
+$segmentationCmd = "cd '$PWD'; if (Test-Path 'venv\Scripts\Activate.ps1') { .\venv\Scripts\Activate.ps1 }; Write-Host ''; Write-Host '========================================' -ForegroundColor Cyan; Write-Host '  Conversational Segmentation Agent (Port 8001)' -ForegroundColor Cyan; Write-Host '========================================' -ForegroundColor Cyan; Write-Host ''; python run_segmentation.py"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", $segmentationCmd
 Start-Sleep -Seconds 2
 
 # Start Frontend (Port 5500) in new window
@@ -95,14 +95,14 @@ Write-Host "  All Services Started Successfully!" -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Services running:" -ForegroundColor Cyan
-Write-Host "  - Flask API:          http://localhost:5000" -ForegroundColor White
-Write-Host "  - Chat Agent:         http://localhost:8000" -ForegroundColor White
-Write-Host "  - Frontend:           http://localhost:5500" -ForegroundColor White
+Write-Host "  - Flask API:                    http://localhost:5000" -ForegroundColor White
+Write-Host "  - Conversational Segmentation:  http://localhost:8001" -ForegroundColor White
+Write-Host "  - Frontend:                     http://localhost:5500" -ForegroundColor White
 Write-Host ""
 Write-Host "Access the application:" -ForegroundColor Cyan
-Write-Host "  - Overview Dashboard:         http://localhost:5500/index.html" -ForegroundColor White
-Write-Host "  - Campaign Segmentation:      http://localhost:5500/campaign-segmentation.html" -ForegroundColor White
-Write-Host "  - Conversational Analytics:   http://localhost:5500/conversational-analytics.html" -ForegroundColor White
+Write-Host "  - Overview Dashboard:            http://localhost:5500/index.html" -ForegroundColor White
+Write-Host "  - Campaign Segmentation:         http://localhost:5500/campaign-segmentation.html" -ForegroundColor White
+Write-Host "  - Conversational Segmentation:   http://localhost:5500/conversational-analytics.html" -ForegroundColor White
 Write-Host ""
 Write-Host "To stop all services:" -ForegroundColor Yellow
 Write-Host "  - Close each PowerShell window" -ForegroundColor White

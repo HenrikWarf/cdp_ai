@@ -40,16 +40,16 @@ if ($process) {
     Write-Host "  No service running on port 5000" -ForegroundColor Gray
 }
 
-# Stop Chat Agent (Port 8000)
-Write-Host "Checking Chat Agent (Port 8000)..." -ForegroundColor Yellow
-$process = Get-ProcessByPort 8000
+# Stop Conversational Segmentation Agent (Port 8001)
+Write-Host "Checking Conversational Segmentation Agent (Port 8001)..." -ForegroundColor Yellow
+$process = Get-ProcessByPort 8001
 if ($process) {
     Write-Host "  Stopping $($process.ProcessName) (PID: $($process.Id))..." -ForegroundColor Yellow
     Stop-Process -Id $process.Id -Force
-    Write-Host "  OK Chat Agent stopped" -ForegroundColor Green
+    Write-Host "  OK Conversational Segmentation Agent stopped" -ForegroundColor Green
     $stopped++
 } else {
-    Write-Host "  No service running on port 8000" -ForegroundColor Gray
+    Write-Host "  No service running on port 8001" -ForegroundColor Gray
 }
 
 # Stop Frontend (Port 5500)

@@ -56,7 +56,7 @@ check_port() {
 # Check if ports are available
 PORTS_IN_USE=()
 if check_port 5000; then PORTS_IN_USE+=("5000 (Flask API)"); fi
-if check_port 8000; then PORTS_IN_USE+=("8000 (Chat Agent)"); fi
+if check_port 8001; then PORTS_IN_USE+=("8001 (Conversational Segmentation)"); fi
 if check_port 5500; then PORTS_IN_USE+=("5500 (Frontend)"); fi
 
 if [ ${#PORTS_IN_USE[@]} -gt 0 ]; then
@@ -91,15 +91,15 @@ FLASK_PID=$!
 echo "   PID: $FLASK_PID"
 sleep 2
 
-# Start Chat Agent (Port 8000)
-echo -e "${YELLOW}2. Starting Chat Agent (Port 8000)...${NC}"
+# Start Conversational Segmentation Agent (Port 8001)
+echo -e "${YELLOW}2. Starting Conversational Segmentation Agent (Port 8001)...${NC}"
 if [ -d "venv" ]; then
-    (source venv/bin/activate && python run_chat.py > logs/chat_agent.log 2>&1) &
+    (source venv/bin/activate && python run_segmentation.py > logs/segmentation_agent.log 2>&1) &
 else
-    python run_chat.py > logs/chat_agent.log 2>&1 &
+    python run_segmentation.py > logs/segmentation_agent.log 2>&1 &
 fi
-CHAT_PID=$!
-echo "   PID: $CHAT_PID"
+ANALYTICS_PID=$!
+echo "   PID: $ANALYTICS_PID"
 sleep 2
 
 # Start Frontend (Port 5500)
@@ -111,7 +111,7 @@ sleep 2
 
 # Save PIDs to file for easy cleanup
 echo "$FLASK_PID" > logs/services.pid
-echo "$CHAT_PID" >> logs/services.pid
+echo "$ANALYTICS_PID" >> logs/services.pid
 echo "$FRONTEND_PID" >> logs/services.pid
 
 echo ""
@@ -120,30 +120,30 @@ echo -e "${GREEN}  All Services Started Successfully!${NC}"
 echo -e "${GREEN}============================================================${NC}"
 echo ""
 echo -e "${CYAN}Services running:${NC}"
-echo -e "${WHITE}  • Flask API:          http://localhost:5000${NC}"
-echo -e "${WHITE}  • Chat Agent:         http://localhost:8000${NC}"
-echo -e "${WHITE}  • Frontend:           http://localhost:5500${NC}"
+echo -e "${WHITE}  • Flask API:                    http://localhost:5000${NC}"
+echo -e "${WHITE}  • Conversational Segmentation:  http://localhost:8001${NC}"
+echo -e "${WHITE}  • Frontend:                     http://localhost:5500${NC}"
 echo ""
 echo -e "${CYAN}Process IDs:${NC}"
-echo -e "${WHITE}  • Flask API:          $FLASK_PID${NC}"
-echo -e "${WHITE}  • Chat Agent:         $CHAT_PID${NC}"
-echo -e "${WHITE}  • Frontend:           $FRONTEND_PID${NC}"
+echo -e "${WHITE}  • Flask API:                    $FLASK_PID${NC}"
+echo -e "${WHITE}  • Conversational Segmentation:  $ANALYTICS_PID${NC}"
+echo -e "${WHITE}  • Frontend:                     $FRONTEND_PID${NC}"
 echo ""
 echo -e "${CYAN}Access the application:${NC}"
-echo -e "${WHITE}  • Overview Dashboard:         http://localhost:5500/index.html${NC}"
-echo -e "${WHITE}  • Campaign Segmentation:      http://localhost:5500/campaign-segmentation.html${NC}"
-echo -e "${WHITE}  • Conversational Analytics:   http://localhost:5500/conversational-analytics.html${NC}"
+echo -e "${WHITE}  • Overview Dashboard:            http://localhost:5500/index.html${NC}"
+echo -e "${WHITE}  • Campaign Segmentation:         http://localhost:5500/campaign-segmentation.html${NC}"
+echo -e "${WHITE}  • Conversational Segmentation:   http://localhost:5500/conversational-analytics.html${NC}"
 echo ""
 echo -e "${CYAN}Logs are saved in:${NC}"
 echo -e "${WHITE}  • logs/flask_api.log${NC}"
-echo -e "${WHITE}  • logs/chat_agent.log${NC}"
+echo -e "${WHITE}  • logs/segmentation_agent.log${NC}"
 echo -e "${WHITE}  • logs/frontend.log${NC}"
 echo ""
 echo -e "${YELLOW}To stop all services, run:${NC}"
 echo -e "${WHITE}  ./stop_services.sh${NC}"
 echo ""
 echo -e "${YELLOW}Or manually stop them:${NC}"
-echo -e "${WHITE}  kill $FLASK_PID $CHAT_PID $FRONTEND_PID${NC}"
+echo -e "${WHITE}  kill $FLASK_PID $ANALYTICS_PID $FRONTEND_PID${NC}"
 echo ""
 
 # Try to open browser (works on Mac and most Linux with xdg-open)

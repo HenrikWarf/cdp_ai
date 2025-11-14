@@ -9,7 +9,7 @@ uvicorn[standard]>=0.24.0
 
 # Google Cloud & BigQuery
 google-cloud-bigquery>=3.10.0
-google-cloud-bigquery-storage>=2.20.0
+google-cloud-bigquery-storage
 db-dtypes>=1.1.0
 
 # Data Processing
@@ -23,9 +23,11 @@ xgboost>=2.0.0
 # We'll implement a simpler uplift model simulation if needed
 
 # LLM Integration - Google Gemini
-google-cloud-aiplatform>=1.38.0
-google-adk>=1.0.0
-ag-ui-adk>=0.1.0
+# Pinned versions to speed up dependency resolution
+google-cloud-aiplatform
+google-adk
+google-generativeai
+google-auth
 
 # Utilities
 python-dotenv>=1.0.0

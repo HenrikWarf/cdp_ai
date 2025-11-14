@@ -47,7 +47,7 @@ export class NavigationComponent {
                     <li class="nav-item ${this.currentPage === 'conversational-analytics' ? 'active' : ''}">
                         <a href="conversational-analytics.html" class="nav-link">
                             <span class="nav-icon">💬</span>
-                            <span class="nav-text">Conversational Analytics</span>
+                            <span class="nav-text">Conversational Segmentation</span>
                         </a>
                     </li>
                 </ul>
