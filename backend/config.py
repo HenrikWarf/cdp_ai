@@ -25,6 +25,9 @@ class Config:
     # CORS Configuration
     ALLOWED_ORIGINS = os.getenv('ALLOWED_ORIGINS', '*').split(',')
     
+    # SQLite Cache Configuration
+    SQLITE_CACHE_DB = os.getenv('SQLITE_CACHE_DB', 'backend/data/cache.db')
+    
     # Gemini Model Configuration
     GEMINI_MODEL = 'gemini-2.5-flash'  # Gemini 2.5 Flash
     GEMINI_TEMPERATURE = 0.3

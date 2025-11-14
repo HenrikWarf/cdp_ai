@@ -1018,8 +1018,25 @@ class SegmentService:
         
         summary_text += f"\n**Final Result**: {len(customer_data):,} highly-targeted customers with an average CLV score of {int(avg_clv * 100)}%, optimized for maximum campaign impact."
         
+        # Add CLV interpretation if available
+        clv_interpretation = interpret_segment_clv(avg_clv, len(customer_data))
+        if clv_interpretation:
+            final_characteristics['clv_interpretation'] = clv_interpretation
+        
+        # Include full Campaign Objective Object for display
+        campaign_interpretation = {
+            'campaign_goal': coo.campaign_goal,
+            'target_behavior': coo.target_behavior,
+            'target_subgroup': coo.target_subgroup if coo.target_subgroup else None,
+            'time_constraint': coo.time_constraint if coo.time_constraint else None,
+            'proposed_intervention': coo.proposed_intervention if coo.proposed_intervention else None,
+            'metric_target': coo.metric_target.model_dump() if coo.metric_target else None,
+            'underlying_assumptions': coo.underlying_assumptions if coo.underlying_assumptions and len(coo.underlying_assumptions) > 0 else None
+        }
+        
         return {
             'summary_text': summary_text,
+            'campaign_interpretation': campaign_interpretation,
             'filtering_steps': filtering_steps,
             'final_characteristics': final_characteristics,
             'confidence_level': 'high' if len(customer_data) > 500 else 'moderate'

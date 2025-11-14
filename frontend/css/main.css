@@ -508,7 +508,7 @@ body::after {
 .segment-journey {
     margin: var(--spacing-xl) 0;
     padding: var(--spacing-lg);
-    background: linear-gradient(135deg, var(--pastel-purple) 0%, var(--pastel-blue) 100%);
+    background: linear-gradient(135deg, #c6c5c7 0%, var(--pastel-blue) 100%);
     border-radius: var(--radius-lg);
     border: 1px solid rgba(91, 95, 199, 0.15);
 }

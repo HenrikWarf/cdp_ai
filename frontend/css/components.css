@@ -28,7 +28,6 @@
 #campaign-input-section:not([style*="display: block"]),
 #analysis-results-section:not([style*="display: block"]),
 #refine-segment-section:not([style*="display: block"]),
-#activate-segment-section:not([style*="display: block"]),
 #segment-details-section:not([style*="display: block"]) {
     display: none !important;
 }
@@ -36,7 +35,6 @@
 #campaign-input-section:not([style*="display: block"]) *,
 #analysis-results-section:not([style*="display: block"]) *,
 #refine-segment-section:not([style*="display: block"]) *,
-#activate-segment-section:not([style*="display: block"]) *,
 #segment-details-section:not([style*="display: block"]) * {
     display: none !important;
 }
@@ -45,7 +43,6 @@
 #campaign-input-section[style*="display: block"],
 #analysis-results-section[style*="display: block"],
 #refine-segment-section[style*="display: block"],
-#activate-segment-section[style*="display: block"],
 #segment-details-section[style*="display: block"] {
     display: block !important;
 }

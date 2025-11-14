@@ -234,8 +234,11 @@
 
                 <!-- Actions -->
                 <div class="action-bar">
-                    <button id="proceed-to-activate-btn" class="btn btn-primary">
-                        Continue to Activation →
+                    <button id="create-segment-from-refine-btn" class="btn btn-success btn-large">
+                        <span class="btn-text">🚀 Create Segment</span>
+                        <span class="btn-loader" style="display: none;">
+                            <span class="spinner"></span> Creating Segment...
+                        </span>
                     </button>
                     <button id="back-to-analysis-btn-refine" class="btn btn-outline">
                         ← Back to Analysis
@@ -243,37 +246,6 @@
                 </div>
             </section>
 
-            <!-- Step 4: Activate Segment (Initially Hidden) -->
-            <section id="activate-segment-section" class="section" style="display: none;">
-                <div class="step-indicator">
-                    <span class="step-badge">Step 4</span>
-                    <h2>Activate Segment</h2>
-                    <p>Review final segment and create for activation</p>
-                </div>
-
-                <!-- Final Segment Overview -->
-                <div class="results-card dashboard-card">
-                    <h3>Final Segment Overview</h3>
-                    <div id="final-segment-dashboard" class="dashboard-content"></div>
-                </div>
-
-                <!-- Filters Applied (NEW) -->
-                <div class="results-card">
-                    <h3>🔍 Filters Applied</h3>
-                    <p class="card-subtitle">All filters that will be applied to this segment</p>
-                    <div id="final-filters-display" class="ai-filters-display"></div>
-                </div>
-
-                <!-- Actions -->
-                <div class="action-bar">
-                    <button id="create-segment-btn" class="btn btn-success">
-                        Create Segment & Get Customers
-                    </button>
-                    <button id="back-to-refine-btn" class="btn btn-outline">
-                        ← Back to Refine
-                    </button>
-                </div>
-            </section>
 
             <!-- Segment Details Section (After Creation) -->
             <section id="segment-details-section" class="section" style="display: none;">

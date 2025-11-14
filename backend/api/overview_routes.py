@@ -5,19 +5,14 @@ Provides aggregated statistics and insights for the overview dashboard
 
 from flask import Blueprint, jsonify, request
 from backend.services.bigquery_service import BigQueryService
+from backend.services.sqlite_cache_service import SQLiteCacheService
 from backend.config import Config
 from backend.utils.clv_interpreter import interpret_clv_score
 from datetime import datetime, timedelta
 
 overview_bp = Blueprint('overview', __name__)
 bigquery_service = BigQueryService()
-
-# In-memory cache for overview statistics
-_overview_cache = {
-    'data': None,
-    'timestamp': None,
-    'ttl_minutes': 10  # Cache for 10 minutes by default
-}
+cache_service = SQLiteCacheService(Config.SQLITE_CACHE_DB)
 
 
 @overview_bp.route('/stats', methods=['GET'])
@@ -45,19 +40,16 @@ def get_overview_stats():
         # Check if refresh is requested
         force_refresh = request.args.get('refresh', 'false').lower() == 'true'
         
-        # Check cache validity
-        cache_valid = False
-        if _overview_cache['data'] is not None and _overview_cache['timestamp'] is not None:
-            cache_age = datetime.utcnow() - _overview_cache['timestamp']
-            cache_valid = cache_age.total_seconds() < (_overview_cache['ttl_minutes'] * 60)
+        # Check if we should fetch from BigQuery
+        should_fetch_bq = force_refresh or not cache_service.is_cache_populated()
         
-        # Return cached data if valid and not forcing refresh
-        if cache_valid and not force_refresh:
-            print(f"📦 Returning cached overview data (age: {cache_age.total_seconds():.0f}s)")
-            response = _overview_cache['data'].copy()
-            response['cached'] = True
-            response['last_updated'] = _overview_cache['timestamp'].isoformat()
-            return jsonify(response)
+        # Return cached data if available and not forcing refresh
+        if not should_fetch_bq:
+            print("📦 Returning data from SQLite cache")
+            cached_data = cache_service.get_overview_data()
+            if cached_data:
+                cached_data['cached'] = True
+                return jsonify(cached_data)
         
         # Fetch fresh data
         if force_refresh:
@@ -132,11 +124,10 @@ def get_overview_stats():
             'last_updated': datetime.utcnow().isoformat()
         }
         
-        # Update cache
-        _overview_cache['data'] = stats.copy()
-        _overview_cache['timestamp'] = datetime.utcnow()
+        # Save to SQLite cache
+        cache_service.save_overview_data(stats)
         
-        print(f"✅ Overview statistics compiled successfully and cached (TTL: {_overview_cache['ttl_minutes']} min)")
+        print("✅ Overview statistics compiled successfully and saved to SQLite cache")
         return jsonify(stats)
         
     except Exception as e:

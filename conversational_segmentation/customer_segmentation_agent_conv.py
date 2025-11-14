@@ -16,7 +16,7 @@ class ConversationalCustomerSegmentationAgent(LlmAgent):
 # This prevents the sub-agent from being parented prematurely.
 AGENT_CONFIG = {
     "name": "customer_segmentation_analyst",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-2.5-pro",
     "instruction": """You are a customer segmentation analyst.
 Your goal is to help users explore customer data in BigQuery and perform segmentation.
 You have been pre-configured to work with the dataset `{dataset}` and the table `{table}`.

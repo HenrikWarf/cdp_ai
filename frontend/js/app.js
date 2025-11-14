@@ -45,7 +45,6 @@ class AetherSegmentApp {
         this.campaignInputSection = document.getElementById('campaign-input-section');
         this.analysisResultsSection = document.getElementById('analysis-results-section');
         this.refineSegmentSection = document.getElementById('refine-segment-section');
-        this.activateSegmentSection = document.getElementById('activate-segment-section');
         this.segmentDetailsSection = document.getElementById('segment-details-section');
 
         this.init();
@@ -200,26 +199,16 @@ class AetherSegmentApp {
             clearFiltersBtn.addEventListener('click', () => this.clearFilters());
         }
 
-        const proceedToActivateBtn = document.getElementById('proceed-to-activate-btn');
-        if (proceedToActivateBtn) {
-            proceedToActivateBtn.addEventListener('click', () => this.showActivateSegment());
-        }
 
         const backToAnalysisBtnRefine = document.getElementById('back-to-analysis-btn-refine');
         if (backToAnalysisBtnRefine) {
             backToAnalysisBtnRefine.addEventListener('click', () => this.showAnalysisResults());
         }
 
-        // Step 5: Activate Segment buttons
-        const backToRefineBtn = document.getElementById('back-to-refine-btn');
-        if (backToRefineBtn) {
-            backToRefineBtn.addEventListener('click', () => this.showRefineSegment());
-        }
-
-        // Create Segment button
-        const createSegmentBtn = document.getElementById('create-segment-btn');
-        if (createSegmentBtn) {
-            createSegmentBtn.addEventListener('click', () => this.createSegment());
+        // Create Segment button (from Step 3)
+        const createSegmentFromRefineBtn = document.getElementById('create-segment-from-refine-btn');
+        if (createSegmentFromRefineBtn) {
+            createSegmentFromRefineBtn.addEventListener('click', () => this.createSegment());
         }
 
         // New Campaign button (from results)
@@ -587,7 +576,6 @@ class AetherSegmentApp {
         this.campaignInputSection.style.display = 'none';
         this.analysisResultsSection.style.display = 'block';
         this.refineSegmentSection.style.display = 'none';
-        this.activateSegmentSection.style.display = 'none';
         this.segmentDetailsSection.style.display = 'none';
     }
 
@@ -613,159 +601,10 @@ class AetherSegmentApp {
         this.campaignInputSection.style.display = 'none';
         this.analysisResultsSection.style.display = 'none';
         this.refineSegmentSection.style.display = 'block';
-        this.activateSegmentSection.style.display = 'none';
         this.segmentDetailsSection.style.display = 'none';
         setTimeout(() => scrollToElement(this.refineSegmentSection), 100);
     }
 
-    async showActivateSegment() {
-        // ALWAYS ensure we have the latest segment data with trigger filter
-        try {
-            console.log('📋 Fetching final segment state for Step 4');
-            console.log('   Current metadata size:', this.currentSegmentMetadata?.estimated_size);
-            console.log('   Selected trigger:', this.selectedTrigger?.trigger_name);
-            console.log('   Applied filters:', Object.keys(this.appliedFilters || {}));
-            
-            // Fetch final segment with ALL applied filters + trigger
-            const preview = await apiClient.previewFilters(
-                this.currentAnalysis.campaign_objective_object,
-                this.appliedFilters || {},  // Include manual filters if any
-                this.selectedTrigger ? this.selectedTrigger.trigger_name : null
-            );
-            
-            console.log('✅ Final segment for Step 4:', {
-                size: preview.final_size,
-                clv: preview.final_avg_clv,
-                manual_filters_applied: Object.keys(this.appliedFilters || {}).length > 0
-            });
-
-            // Calculate predicted uplift and ROI
-            let predicted_uplift = 0;
-            let predicted_roi = '3-5x';
-            
-            if (this.selectedTrigger) {
-                predicted_uplift = this.selectedTrigger.predicted_uplift;
-                const roi_score = (this.selectedTrigger.predicted_uplift * this.selectedTrigger.confidence_score) * 100;
-                
-                if (roi_score >= 70) predicted_roi = '5-8x';
-                else if (roi_score >= 60) predicted_roi = '4-6x';
-                else if (roi_score >= 50) predicted_roi = '3-5x';
-                else if (roi_score >= 40) predicted_roi = '2-4x';
-                else predicted_roi = '1-3x';
-            } else {
-                // Use base prediction if no trigger
-                predicted_uplift = this.currentAnalysis.segment_preview.predicted_uplift || 0;
-                predicted_roi = this.currentAnalysis.segment_preview.predicted_roi || '3-5x';
-            }
-
-            // Update metadata with CURRENT state
-            this.currentSegmentMetadata = {
-                ...this.currentSegmentMetadata,
-                estimated_size: preview.final_size,
-                avg_clv_score: preview.final_avg_clv,
-                avg_cart_value: preview.final_avg_cart_value,
-                predicted_uplift: predicted_uplift,
-                predicted_roi: predicted_roi,
-                demographic_breakdown: preview.demographic_breakdown
-            };
-            
-            console.log('💾 Updated metadata for Step 4:', {
-                size: this.currentSegmentMetadata.estimated_size,
-                clv: this.currentSegmentMetadata.avg_clv_score
-            });
-            
-        } catch (error) {
-            console.error('❌ Failed to fetch final segment state:', error);
-            showToast('Failed to load segment data', 'error');
-            // Continue with existing metadata rather than blocking
-        }
-
-        // Render final overview in Step 4
-        if (this.currentAnalysis) {
-            // Display final segment overview with applied filters
-            const finalDashboard = document.getElementById('final-segment-dashboard');
-            if (finalDashboard && this.currentSegmentMetadata) {
-                this.segmentDashboard.render(
-                    this.currentSegmentMetadata,  // Use updated metadata with filters
-                    this.currentAnalysis.campaign_objective_object,
-                    finalDashboard,
-                    false  // Don't show demographics/product categories
-                );
-            }
-            
-            // Display filters in Step 4
-            this.displayFinalFilters();
-        }
-
-        this.campaignInputSection.style.display = 'none';
-        this.analysisResultsSection.style.display = 'none';
-        this.refineSegmentSection.style.display = 'none';
-        this.activateSegmentSection.style.display = 'block';
-        this.segmentDetailsSection.style.display = 'none';
-        setTimeout(() => scrollToElement(this.activateSegmentSection), 100);
-    }
-    
-    displayFinalFilters() {
-        const finalFiltersDisplay = document.getElementById('final-filters-display');
-        if (!finalFiltersDisplay) return;
-        
-        let html = '';
-        
-        // Show AI behavior filters
-        if (this.currentAnalysis.segment_preview.ai_filters && this.currentAnalysis.segment_preview.ai_filters.length > 0) {
-            html += this.currentAnalysis.segment_preview.ai_filters.map(filter => `
-                <div class="filter-badge ai-filter">
-                    <strong>${filter.filter_type}:</strong> ${filter.description}
-                </div>
-            `).join('');
-        }
-        
-        // Show trigger filter if applied
-        if (this.selectedTrigger) {
-            html += `
-                <div class="filter-badge ai-filter" style="border-left-color: var(--success-color);">
-                    <strong>🎯 Trigger Filter:</strong> ${this.selectedTrigger.trigger_name.replace(/_/g, ' ')} 
-                    (sensitivity > 65%, ${Math.round(this.selectedTrigger.predicted_uplift * 100)}% predicted uplift)
-                </div>
-            `;
-        }
-        
-        // Show manual filters if applied
-        if (this.appliedFilters && Object.keys(this.appliedFilters).length > 0) {
-            Object.entries(this.appliedFilters).forEach(([key, value]) => {
-                if (value) {
-                    let label = '';
-                    let displayValue = value;
-                    
-                    if (key === 'location_country') {
-                        label = 'Country';
-                    } else if (key === 'location_city') {
-                        label = 'City';
-                    } else if (key === 'clv_min') {
-                        label = 'Minimum CLV';
-                        displayValue = `${Math.round(parseFloat(value) * 100)}%`;
-                    } else if (key === 'cart_value_min') {
-                        label = 'Minimum Cart Value';
-                        displayValue = `$${parseFloat(value).toFixed(2)}`;
-                    } else {
-                        label = key.replace(/_/g, ' ');
-                    }
-                    
-                    html += `
-                        <div class="filter-badge" style="border-left-color: var(--primary-color);">
-                            <strong>👤 ${label}:</strong> ${displayValue}
-                        </div>
-                    `;
-                }
-            });
-        }
-        
-        if (!html) {
-            html = '<p class="text-secondary">No additional filters applied</p>';
-        }
-        
-        finalFiltersDisplay.innerHTML = html;
-    }
 
     async handleTriggerSelection(trigger) {
         // Store selected trigger
@@ -1105,9 +944,17 @@ class AetherSegmentApp {
             return;
         }
 
-        const createBtn = document.getElementById('create-segment-btn');
-        const originalText = createBtn.innerHTML;
-        createBtn.innerHTML = '<span class="spinner"></span> Creating Segment...';
+        const createBtn = document.getElementById('create-segment-from-refine-btn');
+        if (!createBtn) {
+            console.error('Create segment button not found');
+            return;
+        }
+
+        // Show loading state
+        const btnText = createBtn.querySelector('.btn-text');
+        const btnLoader = createBtn.querySelector('.btn-loader');
+        if (btnText) btnText.style.display = 'none';
+        if (btnLoader) btnLoader.style.display = 'inline-block';
         createBtn.disabled = true;
 
         try {
@@ -1136,8 +983,10 @@ class AetherSegmentApp {
         } catch (error) {
             console.error('Segment creation failed:', error);
             showToast(`Failed to create segment: ${error.message}`, 'error');
-        } finally {
-            createBtn.innerHTML = originalText;
+            
+            // Restore button state on error
+            if (btnText) btnText.style.display = 'inline-block';
+            if (btnLoader) btnLoader.style.display = 'none';
             createBtn.disabled = false;
         }
     }
@@ -1197,7 +1046,6 @@ class AetherSegmentApp {
         this.campaignInputSection.style.display = 'none';
         this.analysisResultsSection.style.display = 'none';
         this.refineSegmentSection.style.display = 'none';
-        this.activateSegmentSection.style.display = 'none';
         this.segmentDetailsSection.style.display = 'block';
 
         // Scroll to segment details
@@ -1239,6 +1087,58 @@ class AetherSegmentApp {
             return;
         }
         
+        // Build AI Campaign Interpretation section
+        let campaignInterpretationHTML = '';
+        if (summary.campaign_interpretation) {
+            const coo = summary.campaign_interpretation;
+            
+            campaignInterpretationHTML = `
+                <div class="campaign-interpretation-section">
+                    <h4 style="color: #111827; margin-bottom: 1rem; font-size: 1.1rem; font-weight: 700;">🤖 AI Campaign Interpretation</h4>
+                    <div class="coo-fields-grid">
+                        <div class="coo-field">
+                            <span class="coo-label">Campaign Goal:</span>
+                            <span class="coo-value">${coo.campaign_goal ? coo.campaign_goal.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'}</span>
+                        </div>
+                        <div class="coo-field">
+                            <span class="coo-label">Target Behavior:</span>
+                            <span class="coo-value">${coo.target_behavior ? coo.target_behavior.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'}</span>
+                        </div>
+                        ${coo.target_subgroup ? `
+                            <div class="coo-field">
+                                <span class="coo-label">Target Subgroup:</span>
+                                <span class="coo-value">${coo.target_subgroup.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                            </div>
+                        ` : ''}
+                        ${coo.time_constraint ? `
+                            <div class="coo-field">
+                                <span class="coo-label">Time Constraint:</span>
+                                <span class="coo-value">${coo.time_constraint.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                            </div>
+                        ` : ''}
+                        ${coo.proposed_intervention && coo.proposed_intervention.length > 0 ? `
+                            <div class="coo-field">
+                                <span class="coo-label">Proposed Intervention:</span>
+                                <span class="coo-value">${(Array.isArray(coo.proposed_intervention) ? coo.proposed_intervention.map(i => i.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ') : coo.proposed_intervention)}</span>
+                            </div>
+                        ` : ''}
+                        ${coo.metric_target ? `
+                            <div class="coo-field">
+                                <span class="coo-label">Metric Target:</span>
+                                <span class="coo-value">${coo.metric_target.type ? coo.metric_target.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : ''} ${coo.metric_target.value ? `(${Math.round(coo.metric_target.value * 100)}%)` : ''}</span>
+                            </div>
+                        ` : ''}
+                        ${coo.underlying_assumptions && coo.underlying_assumptions.length > 0 ? `
+                            <div class="coo-field full-width">
+                                <span class="coo-label">Underlying Assumptions:</span>
+                                <span class="coo-value">${coo.underlying_assumptions.join(', ').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+        
         // Build filtering steps HTML
         const stepsHTML = summary.filtering_steps.map((step, index) => {
             const stepNum = index + 1;
@@ -1255,7 +1155,9 @@ class AetherSegmentApp {
         
         // Build final summary
         const finalHTML = `
-            <div class="journey-steps">
+            ${campaignInterpretationHTML}
+            <div class="journey-steps" style="margin-top: 2rem;">
+                <h4 style="color: #111827; margin-bottom: 1rem; font-size: 1.1rem; font-weight: 700;">📋 Filtering Journey</h4>
                 ${stepsHTML}
             </div>
             <div class="journey-result">
@@ -1395,7 +1297,6 @@ class AetherSegmentApp {
         this.campaignInputSection.style.display = 'block';
         this.analysisResultsSection.style.display = 'none';
         this.refineSegmentSection.style.display = 'none';
-        this.activateSegmentSection.style.display = 'none';
         this.segmentDetailsSection.style.display = 'none';
 
         // Scroll to top
