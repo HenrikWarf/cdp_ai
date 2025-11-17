@@ -791,17 +791,19 @@
     padding: var(--spacing-md) var(--spacing-lg) var(--spacing-lg) var(--spacing-lg);
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-md);
 }
 
 /* ============================================
    Campaign Cards - Compact Layout
    ============================================ */
 .campaign-card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(229, 231, 235, 0.8);
     border-radius: var(--radius-md);
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-md) var(--spacing-lg);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
@@ -810,6 +812,7 @@
     overflow: hidden;
     cursor: pointer;
     min-height: 80px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .campaign-card::before {
@@ -830,7 +833,7 @@
 
 .campaign-card:hover {
     border-color: var(--primary-color);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+    background: rgba(255, 255, 255, 1);
     transform: translateX(2px);
     box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
 }

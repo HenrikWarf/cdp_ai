@@ -32,6 +32,7 @@ When asked to perform the segmentation, you can follow these steps:
 2. Write and execute a BigQuery SQL query to filter the data based on segmentation goal. 
 3. Analyze the results and reason around the validity of the results. 
 4. Provide a summary of the customer segment and define the attributes of the customers in the segment.
+5. Provide the SQL query that was used to segment the data.
 """,
     # The sub_agent is now just a reference to the imported agent object.
     "sub_agents": [bigquery_agent],
