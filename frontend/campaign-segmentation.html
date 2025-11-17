@@ -72,6 +72,15 @@
                             <button class="chip" data-example="winback">Win-Back Campaign</button>
                         </div>
                     </div>
+                    
+                    <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
+                        <p style="color: #6b7280; margin-bottom: 0.75rem; font-size: 0.9rem;">
+                            Don't need AI? Build your segment manually
+                        </p>
+                        <button id="skip-to-manual-btn" class="btn btn-outline" style="min-width: 200px;">
+                            ⚙️ Manual Segment Builder
+                        </button>
+                    </div>
                 </div>
             </section>
 
@@ -117,10 +126,16 @@
 
             <!-- Step 3: Refine Segment (Initially Hidden) -->
             <section id="refine-segment-section" class="section" style="display: none;">
-                <div class="step-indicator">
+                <div class="step-indicator" id="refine-step-indicator">
                     <span class="step-badge">Step 3</span>
                     <h2>Refine Your Segment (Optional)</h2>
                     <p>Add location, CLV, or other filters to further narrow your segment</p>
+                </div>
+                
+                <div class="step-indicator" id="manual-mode-indicator" style="display: none;">
+                    <span class="step-badge">Manual Mode</span>
+                    <h2>⚙️ Build Your Segment Manually</h2>
+                    <p>Apply any combination of filters to create your custom segment</p>
                 </div>
 
                 <!-- Compact Two-Column Layout -->
@@ -189,6 +204,42 @@
                                     <option value="Adelaide">Adelaide</option>
                                 </select>
                             </div>
+                            </div>
+                        </div>
+
+                        <!-- Demographics Filters -->
+                        <div class="filter-group">
+                            <h4>👤 Demographics</h4>
+                            <div class="filter-inputs">
+                                <div class="input-group">
+                                    <label for="filter-age-min">Minimum Age</label>
+                                    <input type="number" id="filter-age-min" class="filter-input" min="18" max="100" placeholder="e.g., 25">
+                                    <span class="input-hint">Age range targeting</span>
+                                </div>
+                                <div class="input-group">
+                                    <label for="filter-age-max">Maximum Age</label>
+                                    <input type="number" id="filter-age-max" class="filter-input" min="18" max="100" placeholder="e.g., 55">
+                                </div>
+                                <div class="input-group">
+                                    <label for="filter-gender">Gender</label>
+                                    <select id="filter-gender" class="filter-input">
+                                        <option value="">All Genders</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Non-Binary">Non-Binary</option>
+                                        <option value="Prefer Not to Say">Prefer Not to Say</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <label for="filter-income">Income Level</label>
+                                    <select id="filter-income" class="filter-input">
+                                        <option value="">All Income Levels</option>
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="premium">Premium</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 

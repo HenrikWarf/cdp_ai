@@ -338,6 +338,31 @@ class SegmentService:
             ]
             print(f"   📍 City filter ({city}): {len(filtered_data)} customers")
         
+        # Demographic filters
+        if 'age_min' in filters:
+            age_min = int(filters['age_min'])
+            if 'age' in filtered_data.columns:
+                filtered_data = filtered_data[filtered_data['age'] >= age_min]
+                print(f"   👤 Age filter (>= {age_min}): {len(filtered_data)} customers")
+        
+        if 'age_max' in filters:
+            age_max = int(filters['age_max'])
+            if 'age' in filtered_data.columns:
+                filtered_data = filtered_data[filtered_data['age'] <= age_max]
+                print(f"   👤 Age filter (<= {age_max}): {len(filtered_data)} customers")
+        
+        if 'gender' in filters and filters['gender']:
+            gender = filters['gender']
+            if 'gender' in filtered_data.columns:
+                filtered_data = filtered_data[filtered_data['gender'] == gender]
+                print(f"   👤 Gender filter ({gender}): {len(filtered_data)} customers")
+        
+        if 'income_level' in filters and filters['income_level']:
+            income = filters['income_level']
+            if 'income_level' in filtered_data.columns:
+                filtered_data = filtered_data[filtered_data['income_level'] == income]
+                print(f"   💰 Income filter ({income}): {len(filtered_data)} customers")
+        
         # CLV filter
         if 'clv_min' in filters:
             clv_min = float(filters['clv_min'])
@@ -366,7 +391,7 @@ class SegmentService:
         Preview the impact of additional filters on segment size/quality
         
         Args:
-            coo_data: Campaign Objective Object as dict
+            coo_data: Campaign Objective Object as dict (None for manual mode)
             new_filters: Additional filters to apply (location, CLV, cart value, etc.)
             selected_trigger: Optional trigger name to apply sensitivity filter
         
@@ -375,21 +400,43 @@ class SegmentService:
         """
         from backend.api.schemas import CampaignObjectiveObject, FilterPreviewResponse
         
-        # Convert dict to COO
-        coo = CampaignObjectiveObject(**coo_data)
-        
-        # Get the base segment (AI-filtered + trigger filter if selected)
-        # CRITICAL: If a trigger was selected, apply its sensitivity filter here
-        uplift_scores = None
-        if selected_trigger:
-            uplift_scores = {selected_trigger: Config.DEFAULT_UPLIFT_THRESHOLD}
-            print(f"\n🎯 Preview with trigger filter: '{selected_trigger}' (threshold: {Config.DEFAULT_UPLIFT_THRESHOLD})")
-        
-        base_query = self.query_builder.build_segment_query(
-            coo, 
-            uplift_scores=uplift_scores,
-            limit=None
-        )
+        # Manual mode: no COO, just query all customers
+        if coo_data is None:
+            print("\n📊 Manual Mode: Querying all customers...")
+            base_query = f"""
+                SELECT
+                    c.customer_id,
+                    c.email_address,
+                    c.first_name,
+                    c.location_city,
+                    c.location_country,
+                    c.clv_score,
+                    c.age,
+                    c.gender,
+                    c.income_level,
+                    cs.discount_sensitivity_score,
+                    cs.free_shipping_sensitivity_score,
+                    cs.churn_probability_score
+                FROM `{self.dataset_id}.customers` c
+                LEFT JOIN `{self.dataset_id}.customer_scores` cs
+                    ON c.customer_id = cs.customer_id
+            """
+        else:
+            # AI mode: Convert dict to COO
+            coo = CampaignObjectiveObject(**coo_data)
+            
+            # Get the base segment (AI-filtered + trigger filter if selected)
+            # CRITICAL: If a trigger was selected, apply its sensitivity filter here
+            uplift_scores = None
+            if selected_trigger:
+                uplift_scores = {selected_trigger: Config.DEFAULT_UPLIFT_THRESHOLD}
+                print(f"\n🎯 Preview with trigger filter: '{selected_trigger}' (threshold: {Config.DEFAULT_UPLIFT_THRESHOLD})")
+            
+            base_query = self.query_builder.build_segment_query(
+                coo, 
+                uplift_scores=uplift_scores,
+                limit=None
+            )
         base_data = self.bigquery_service.query(base_query)
         starting_size = len(base_data)
         print(f"   Starting size (after trigger filter): {starting_size} customers")
@@ -412,6 +459,35 @@ class SegmentService:
             filters_applied.append({
                 'type': 'location',
                 'description': f"City: {new_filters['location_city']}",
+                'impact': len(filtered_data)
+            })
+        
+        # Demographic filters
+        if 'age_min' in new_filters:
+            filters_applied.append({
+                'type': 'demographic',
+                'description': f"Age ≥ {new_filters['age_min']}",
+                'impact': len(filtered_data)
+            })
+        
+        if 'age_max' in new_filters:
+            filters_applied.append({
+                'type': 'demographic',
+                'description': f"Age ≤ {new_filters['age_max']}",
+                'impact': len(filtered_data)
+            })
+        
+        if 'gender' in new_filters and new_filters['gender']:
+            filters_applied.append({
+                'type': 'demographic',
+                'description': f"Gender: {new_filters['gender']}",
+                'impact': len(filtered_data)
+            })
+        
+        if 'income_level' in new_filters and new_filters['income_level']:
+            filters_applied.append({
+                'type': 'demographic',
+                'description': f"Income: {new_filters['income_level'].replace('_', ' ').title()}",
                 'impact': len(filtered_data)
             })
         
@@ -961,6 +1037,40 @@ class SegmentService:
                 'description': ' • ' + '\n • '.join(ai_filter_desc)
             })
         
+        # Step 2.5: Demographic Filters (if extracted by AI)
+        if coo.demographic_filters:
+            demo = coo.demographic_filters
+            demo_filter_desc = []
+            
+            if demo.get('age_min') or demo.get('age_max'):
+                age_range = ''
+                if demo.get('age_min') and demo.get('age_max'):
+                    age_range = f"Age: {demo['age_min']}-{demo['age_max']}"
+                elif demo.get('age_min'):
+                    age_range = f"Age: {demo['age_min']}+"
+                elif demo.get('age_max'):
+                    age_range = f"Age: up to {demo['age_max']}"
+                if age_range:
+                    demo_filter_desc.append(age_range)
+            
+            if demo.get('gender'):
+                demo_filter_desc.append(f"Gender: {demo['gender']}")
+            
+            if demo.get('income_level'):
+                demo_filter_desc.append(f"Income: {demo['income_level'].replace('_', ' ').title()}")
+            
+            if demo.get('location_country'):
+                demo_filter_desc.append(f"Country: {demo['location_country']}")
+            
+            if demo.get('location_city'):
+                demo_filter_desc.append(f"City: {demo['location_city']}")
+            
+            if demo_filter_desc:
+                filtering_steps.append({
+                    'step': 'Demographic Targeting',
+                    'description': ' • ' + '\n • '.join(demo_filter_desc)
+                })
+        
         # Step 3: Trigger Selection
         if selected_trigger:
             trigger_obj = next((t for t in trigger_suggestions if t.trigger_name == selected_trigger), None)
@@ -979,10 +1089,32 @@ class SegmentService:
         # Step 4: Manual Refinements
         if additional_filters and len(additional_filters) > 0:
             manual_filter_desc = []
+            
+            # Location filters
             if 'location_country' in additional_filters:
                 manual_filter_desc.append(f"Country: {additional_filters['location_country']}")
             if 'location_city' in additional_filters:
                 manual_filter_desc.append(f"City: {additional_filters['location_city']}")
+            
+            # Demographic filters (manually added)
+            if 'age_min' in additional_filters or 'age_max' in additional_filters:
+                age_range = ''
+                if additional_filters.get('age_min') and additional_filters.get('age_max'):
+                    age_range = f"Age: {additional_filters['age_min']}-{additional_filters['age_max']}"
+                elif additional_filters.get('age_min'):
+                    age_range = f"Age: {additional_filters['age_min']}+"
+                elif additional_filters.get('age_max'):
+                    age_range = f"Age: up to {additional_filters['age_max']}"
+                if age_range:
+                    manual_filter_desc.append(age_range)
+            
+            if 'gender' in additional_filters:
+                manual_filter_desc.append(f"Gender: {additional_filters['gender']}")
+            
+            if 'income_level' in additional_filters:
+                manual_filter_desc.append(f"Income: {additional_filters['income_level'].replace('_', ' ').title()}")
+            
+            # Value filters
             if 'clv_min' in additional_filters:
                 clv_min_pct = int(float(additional_filters['clv_min']) * 100)
                 manual_filter_desc.append(f"Minimum CLV: {clv_min_pct}%")
@@ -1031,7 +1163,8 @@ class SegmentService:
             'time_constraint': coo.time_constraint if coo.time_constraint else None,
             'proposed_intervention': coo.proposed_intervention if coo.proposed_intervention else None,
             'metric_target': coo.metric_target.model_dump() if coo.metric_target else None,
-            'underlying_assumptions': coo.underlying_assumptions if coo.underlying_assumptions and len(coo.underlying_assumptions) > 0 else None
+            'underlying_assumptions': coo.underlying_assumptions if coo.underlying_assumptions and len(coo.underlying_assumptions) > 0 else None,
+            'demographic_filters': coo.demographic_filters if coo.demographic_filters else None
         }
         
         return {

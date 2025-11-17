@@ -121,6 +121,9 @@ class DataGenerator:
                 bigquery.SchemaField('acquisition_source', 'STRING'),
                 bigquery.SchemaField('creation_date', 'TIMESTAMP'),
                 bigquery.SchemaField('clv_score', 'FLOAT'),
+                bigquery.SchemaField('age', 'INTEGER'),
+                bigquery.SchemaField('gender', 'STRING'),
+                bigquery.SchemaField('income_level', 'STRING'),
             ],
             'customer_scores': [
                 bigquery.SchemaField('customer_id', 'STRING', mode='REQUIRED'),
@@ -227,6 +230,33 @@ class DataGenerator:
             
             city, country = random.choice(self.cities)
             
+            # Generate age (18-75, weighted toward 25-55)
+            # Use beta distribution to create realistic age distribution
+            age_normalized = np.random.beta(2.5, 2.5)  # Peak in middle
+            age = int(18 + age_normalized * (75 - 18))
+            
+            # Generate gender with realistic distribution
+            gender_rand = random.random()
+            if gender_rand < 0.48:
+                gender = 'Male'
+            elif gender_rand < 0.96:
+                gender = 'Female'
+            elif gender_rand < 0.98:
+                gender = 'Non-Binary'
+            else:
+                gender = 'Prefer Not to Say'
+            
+            # Generate income level correlated with CLV
+            # Higher CLV customers are more likely to have higher income
+            if clv_score >= 0.85:
+                income_level = random.choices(['premium', 'high', 'medium'], weights=[0.6, 0.3, 0.1])[0]
+            elif clv_score >= 0.70:
+                income_level = random.choices(['premium', 'high', 'medium'], weights=[0.2, 0.5, 0.3])[0]
+            elif clv_score >= 0.50:
+                income_level = random.choices(['high', 'medium', 'low'], weights=[0.2, 0.6, 0.2])[0]
+            else:
+                income_level = random.choices(['medium', 'low'], weights=[0.4, 0.6])[0]
+            
             customers.append({
                 'customer_id': customer_id,
                 'email_address': f"{random.choice(self.first_names).lower()}.{customer_id}@example.com",
@@ -236,6 +266,9 @@ class DataGenerator:
                 'acquisition_source': random.choice(self.acquisition_sources),
                 'creation_date': creation_date,
                 'clv_score': round(clv_score, 3),
+                'age': age,
+                'gender': gender,
+                'income_level': income_level,
             })
         
         df = pd.DataFrame(customers)
@@ -626,6 +659,17 @@ class DataGenerator:
         self.load_dataframe('abandoned_carts', carts_df)
         self.load_dataframe('behavioral_events', events_df)
         self.load_dataframe('campaign_history', campaigns_df)
+        
+        # Build the unified customer table
+        print("\n" + "="*60)
+        print("  Building Customers Unified Table...")
+        print("="*60 + "\n")
+        try:
+            from build_customers_unified_table import build_customers_unified_table
+            build_customers_unified_table()
+        except Exception as e:
+            print(f"⚠️  Warning: Could not build unified table: {str(e)}")
+            print("   You can build it manually by running: python scripts/build_customers_unified_table.py\n")
         
         print("\n" + "="*60)
         print("  ✓ Data Generation Complete!")

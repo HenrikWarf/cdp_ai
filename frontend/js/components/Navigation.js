@@ -34,7 +34,7 @@ export class NavigationComponent {
                 <ul class="nav-menu">
                     <li class="nav-item ${this.currentPage === 'overview' ? 'active' : ''}">
                         <a href="index.html" class="nav-link">
-                            <span class="nav-icon">📊</span>
+                            <span class="nav-icon">🏠</span>
                             <span class="nav-text">Overview</span>
                         </a>
                     </li>
