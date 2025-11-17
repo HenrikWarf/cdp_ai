@@ -138,158 +138,17 @@ function TabNavigation({ activeTab, onTabChange, hasResults }) {
 
     return (
         <div className="results-tabs">
-            <div className="tabs-left">
-                {tabs.map(tab => (
-                    <button
-                        key={tab.id}
-                        className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-                        onClick={() => onTabChange(tab.id)}
-                        disabled={tab.disabled}
-                    >
-                        <span className="tab-icon">{tab.icon}</span>
-                        <span>{tab.label}</span>
-                    </button>
-                ))}
-            </div>
-            <div className="tabs-right">
+            {tabs.map(tab => (
                 <button
-                    className={`tab-button metadata-button ${activeTab === 'metadata' ? 'active' : ''}`}
-                    onClick={() => onTabChange('metadata')}
+                    key={tab.id}
+                    className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+                    onClick={() => onTabChange(tab.id)}
+                    disabled={tab.disabled}
                 >
-                    <span className="tab-icon">📖</span>
-                    <span>Table Metadata</span>
+                    <span className="tab-icon">{tab.icon}</span>
+                    <span>{tab.label}</span>
                 </button>
-            </div>
-        </div>
-    );
-}
-
-// ============================================
-// Table Metadata Component
-// ============================================
-
-function TableMetadataView() {
-    const metadata = [
-        // Core Profile
-        { column: 'customer_id', description: 'Unique identifier for each customer' },
-        { column: 'email_address', description: 'Customer email address' },
-        { column: 'first_name', description: 'Customer first name' },
-        { column: 'location_city', description: 'City where customer is located' },
-        { column: 'location_country', description: 'Country where customer is located' },
-        { column: 'acquisition_source', description: 'Channel through which customer was acquired' },
-        { column: 'creation_date', description: 'Date when customer account was created' },
-        { column: 'days_as_customer', description: 'Number of days since account creation' },
-        { column: 'age', description: 'Customer age in years' },
-        { column: 'gender', description: 'Customer gender (Male, Female, Non-Binary, Prefer Not to Say)' },
-        { column: 'income_level', description: 'Income bracket (low, medium, high, premium)' },
-        { column: 'clv_score', description: 'Customer Lifetime Value score (0-1 scale)' },
-        
-        // ML Scores & Affinities
-        { column: 'discount_sensitivity_score', description: 'Likelihood to purchase with discount (0-1 scale)' },
-        { column: 'free_shipping_sensitivity_score', description: 'Likelihood to purchase with free shipping (0-1 scale)' },
-        { column: 'exclusivity_seeker_flag', description: 'Whether customer prefers exclusive/premium products (boolean)' },
-        { column: 'churn_probability_score', description: 'Probability of customer churn (0-1 scale)' },
-        { column: 'social_proof_affinity', description: 'Responsiveness to social proof and reviews (0-1 scale)' },
-        { column: 'content_engagement_score', description: 'Level of engagement with content and marketing (0-1 scale)' },
-        
-        // Product Category Affinities
-        { column: 'living_room_affinity', description: 'Affinity for living room furniture category (0-1 scale)' },
-        { column: 'bedroom_affinity', description: 'Affinity for bedroom furniture category (0-1 scale)' },
-        { column: 'kitchen_dining_affinity', description: 'Affinity for kitchen & dining category (0-1 scale)' },
-        { column: 'office_affinity', description: 'Affinity for office furniture category (0-1 scale)' },
-        { column: 'outdoor_affinity', description: 'Affinity for outdoor furniture category (0-1 scale)' },
-        { column: 'lighting_affinity', description: 'Affinity for lighting products category (0-1 scale)' },
-        { column: 'storage_affinity', description: 'Affinity for storage solutions category (0-1 scale)' },
-        { column: 'textiles_affinity', description: 'Affinity for textiles category (0-1 scale)' },
-        { column: 'bathroom_affinity', description: 'Affinity for bathroom products category (0-1 scale)' },
-        { column: 'decoration_affinity', description: 'Affinity for decoration category (0-1 scale)' },
-        
-        // Purchase Profile
-        { column: 'favorite_category', description: 'Customer\'s most frequently purchased category' },
-        { column: 'secondary_category', description: 'Customer\'s second most purchased category' },
-        { column: 'cross_category_shopper', description: 'Whether customer shops across multiple categories (boolean)' },
-        { column: 'price_tier_preference', description: 'Preferred price tier (budget, mid-range, premium)' },
-        
-        // Transaction Metrics (All-time)
-        { column: 'total_purchases', description: 'Total number of purchases (all-time)' },
-        { column: 'total_revenue', description: 'Total revenue generated by customer (all-time)' },
-        { column: 'avg_order_value', description: 'Average order value across all purchases' },
-        { column: 'first_purchase_date', description: 'Date of first purchase' },
-        { column: 'last_purchase_date', description: 'Date of most recent purchase' },
-        { column: 'days_since_last_purchase', description: 'Number of days since last purchase' },
-        { column: 'purchase_frequency_per_month', description: 'Average number of purchases per month' },
-        
-        // Transaction Metrics (90 days)
-        { column: 'purchases_90d', description: 'Number of purchases in last 90 days' },
-        { column: 'revenue_90d', description: 'Revenue generated in last 90 days' },
-        { column: 'avg_order_value_90d', description: 'Average order value for last 90 days' },
-        
-        // Transaction Metrics (30 days)
-        { column: 'purchases_30d', description: 'Number of purchases in last 30 days' },
-        { column: 'revenue_30d', description: 'Revenue generated in last 30 days' },
-        { column: 'avg_order_value_30d', description: 'Average order value for last 30 days' },
-        
-        // Transaction Category Insights
-        { column: 'most_purchased_category', description: 'Product category purchased most frequently' },
-        { column: 'most_recent_category', description: 'Product category of most recent purchase' },
-        
-        // Cart Abandonment Metrics
-        { column: 'total_abandoned_carts', description: 'Total number of abandoned carts (all-time)' },
-        { column: 'total_abandoned_cart_value', description: 'Total value of abandoned carts (all-time)' },
-        { column: 'avg_abandoned_cart_value', description: 'Average value per abandoned cart' },
-        { column: 'last_cart_abandonment_date', description: 'Date of most recent cart abandonment' },
-        { column: 'days_since_last_cart_abandonment', description: 'Days since last cart abandonment' },
-        { column: 'abandoned_carts_30d', description: 'Number of abandoned carts in last 30 days' },
-        { column: 'abandoned_cart_value_30d', description: 'Value of abandoned carts in last 30 days' },
-        { column: 'abandoned_carts_90d', description: 'Number of abandoned carts in last 90 days' },
-        
-        // Behavioral Engagement Metrics
-        { column: 'total_events_lifetime', description: 'Total number of behavioral events (all-time)' },
-        { column: 'last_event_date', description: 'Date of most recent behavioral event' },
-        { column: 'days_since_last_event', description: 'Days since last behavioral event' },
-        { column: 'events_90d', description: 'Number of behavioral events in last 90 days' },
-        { column: 'events_30d', description: 'Number of behavioral events in last 30 days' },
-        { column: 'most_viewed_category', description: 'Product category viewed most frequently' },
-        { column: 'engagement_rate_per_day', description: 'Average number of events per day' },
-        
-        // Campaign Response Metrics
-        { column: 'total_campaigns_received', description: 'Total number of campaigns received (all-time)' },
-        { column: 'total_campaigns_converted', description: 'Total number of campaigns that led to conversion' },
-        { column: 'overall_conversion_rate', description: 'Overall campaign conversion rate (0-1 scale)' },
-        { column: 'campaigns_90d', description: 'Number of campaigns received in last 90 days' },
-        { column: 'conversions_90d', description: 'Number of conversions in last 90 days' },
-        { column: 'conversion_rate_90d', description: 'Campaign conversion rate for last 90 days (0-1 scale)' },
-        { column: 'campaigns_30d', description: 'Number of campaigns received in last 30 days' },
-        { column: 'most_responsive_trigger_type', description: 'Trigger type that generates most conversions' },
-        { column: 'last_campaign_date', description: 'Date of most recent campaign' },
-        { column: 'days_since_last_campaign', description: 'Days since last campaign was sent' },
-        
-        // Metadata
-        { column: 'last_updated_at', description: 'Timestamp of last table update' }
-    ];
-
-    return (
-        <div className="metadata-container">
-            <div className="metadata-header">
-                <div className="metadata-title">
-                    <span className="metadata-icon">📖</span>
-                    <h3>cdp_data.customers</h3>
-                </div>
-                <div className="metadata-subtitle">
-                    {metadata.length} columns • Consolidated customer table with all behavioral, transactional, and ML-driven insights
-                </div>
-            </div>
-            <div className="metadata-grid">
-                {metadata.map((item, index) => (
-                    <div key={index} className="metadata-row">
-                        <div className="metadata-column-name">
-                            <span className="column-type-icon">▸</span>
-                            <code>{item.column}</code>
-                        </div>
-                        <div className="metadata-description">{item.description}</div>
-                    </div>
-                ))}
-            </div>
+            ))}
         </div>
     );
 }
@@ -300,16 +159,10 @@ function TableMetadataView() {
 
 function OverviewEmptyState({ onExampleClick }) {
     const examples = [
-        'Show top 10 customers by CLV score',
-        'Find high-value customers with high churn risk',
-        'List customers who purchased in last 30 days',
-        'Analyze customer distribution by country',
-        'Show customers with high discount sensitivity',
-        'Find customers aged 25-40 with premium income',
-        'List customers by most purchased category',
-        'Show customers with low days since last purchase',
-        'Find high CLV customers in specific locations',
-        'Analyze average order value by customer segment',
+        'Show all tables in cdp_data',
+        'List customers with high CLV',
+        'Analyze recent transactions',
+        'Show customer segments by location',
     ];
 
     return (
@@ -711,9 +564,6 @@ function ResultsPane({ activeTab, queryResults, sqlQuery, onExampleClick }) {
         case 'sql':
             return <SQLQueryView query={sqlQuery} />;
             
-        case 'metadata':
-            return <TableMetadataView />;
-            
         default:
             return <OverviewEmptyState onExampleClick={onExampleClick} />;
     }
@@ -842,10 +692,12 @@ function ChatApp() {
                 <div className="header-left">
                     <h1>Customer Segmentation Explorer</h1>
                     <span className="dataset-badge">cdp_data</span>
+                </div>
+                <div className="header-right">
                     <span className="status-dot" style={{ 
                         background: isConnected ? 'var(--accent-success)' : 'var(--accent-error)' 
                     }}></span>
-                    <span className="status-text">{status}</span>
+                    <span>{status}</span>
                 </div>
             </div>
 
