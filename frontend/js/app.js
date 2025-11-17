@@ -182,6 +182,12 @@ class AetherSegmentApp {
     }
 
     setupActionButtons() {
+        // Step 1: Skip to Manual button
+        const skipToManualBtn = document.getElementById('skip-to-manual-btn');
+        if (skipToManualBtn) {
+            skipToManualBtn.addEventListener('click', () => this.showManualMode());
+        }
+
         // Step 2: Analysis Results buttons (go directly to refine segment)
         const proceedToRefineBtn = document.getElementById('proceed-to-refine-btn');
         if (proceedToRefineBtn) {
@@ -555,6 +561,58 @@ class AetherSegmentApp {
             `).join('');
         }
         
+        // Show demographic filters if applied (from currentAnalysis COO)
+        if (this.currentAnalysis && this.currentAnalysis.campaign_objective_object && 
+            this.currentAnalysis.campaign_objective_object.demographic_filters) {
+            const demo = this.currentAnalysis.campaign_objective_object.demographic_filters;
+            
+            if (demo.age_min || demo.age_max) {
+                const ageRange = demo.age_min && demo.age_max 
+                    ? `${demo.age_min}-${demo.age_max}` 
+                    : demo.age_min 
+                        ? `${demo.age_min}+` 
+                        : `up to ${demo.age_max}`;
+                html += `
+                    <div class="filter-badge ai-filter" style="border-left-color: #3b82f6;">
+                        <strong>👤 Age:</strong> ${ageRange}
+                    </div>
+                `;
+            }
+            
+            if (demo.gender) {
+                html += `
+                    <div class="filter-badge ai-filter" style="border-left-color: #3b82f6;">
+                        <strong>👤 Gender:</strong> ${demo.gender}
+                    </div>
+                `;
+            }
+            
+            if (demo.income_level) {
+                const income = demo.income_level.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                html += `
+                    <div class="filter-badge ai-filter" style="border-left-color: #3b82f6;">
+                        <strong>💰 Income:</strong> ${income}
+                    </div>
+                `;
+            }
+            
+            if (demo.location_country) {
+                html += `
+                    <div class="filter-badge ai-filter" style="border-left-color: #3b82f6;">
+                        <strong>📍 Country:</strong> ${demo.location_country}
+                    </div>
+                `;
+            }
+            
+            if (demo.location_city) {
+                html += `
+                    <div class="filter-badge ai-filter" style="border-left-color: #3b82f6;">
+                        <strong>📍 City:</strong> ${demo.location_city}
+                    </div>
+                `;
+            }
+        }
+        
         // Show trigger filter if applied (from selectedTrigger)
         if (this.selectedTrigger) {
             html += `
@@ -582,6 +640,22 @@ class AetherSegmentApp {
     // REMOVED: showTriggerSelection() - triggers are now in Step 2 (Analysis page)
 
     showRefineSegment() {
+        // Ensure we're not in manual mode
+        this.isManualMode = false;
+        
+        // Show AI mode indicators
+        const refineStepIndicator = document.getElementById('refine-step-indicator');
+        const manualModeIndicator = document.getElementById('manual-mode-indicator');
+        if (refineStepIndicator) refineStepIndicator.style.display = 'block';
+        if (manualModeIndicator) manualModeIndicator.style.display = 'none';
+        
+        // Show AI filters section
+        const aiFiltersReview = document.getElementById('ai-filters-review');
+        if (aiFiltersReview) {
+            const aiFiltersCard = aiFiltersReview.closest('.results-card');
+            if (aiFiltersCard) aiFiltersCard.style.display = 'block';
+        }
+        
         // Render AI filters review
         if (this.currentAnalysis) {
             this.displayAIFilters(this.currentAnalysis.segment_preview.ai_filters);
@@ -596,6 +670,44 @@ class AetherSegmentApp {
                     false  // Compact mode
                 );
             }
+            
+            // Pre-populate demographic filters from AI extraction
+            const coo = this.currentAnalysis.campaign_objective_object;
+            if (coo && coo.demographic_filters) {
+                const demo = coo.demographic_filters;
+                
+                // Pre-fill age range
+                if (demo.age_min) {
+                    const ageMinInput = document.getElementById('filter-age-min');
+                    if (ageMinInput) ageMinInput.value = demo.age_min;
+                }
+                if (demo.age_max) {
+                    const ageMaxInput = document.getElementById('filter-age-max');
+                    if (ageMaxInput) ageMaxInput.value = demo.age_max;
+                }
+                
+                // Pre-fill gender
+                if (demo.gender) {
+                    const genderSelect = document.getElementById('filter-gender');
+                    if (genderSelect) genderSelect.value = demo.gender;
+                }
+                
+                // Pre-fill income level
+                if (demo.income_level) {
+                    const incomeSelect = document.getElementById('filter-income');
+                    if (incomeSelect) incomeSelect.value = demo.income_level;
+                }
+                
+                // Pre-fill location (country/city) if in demographic filters
+                if (demo.location_country) {
+                    const countrySelect = document.getElementById('filter-country');
+                    if (countrySelect) countrySelect.value = demo.location_country;
+                }
+                if (demo.location_city) {
+                    const citySelect = document.getElementById('filter-city');
+                    if (citySelect) citySelect.value = demo.location_city;
+                }
+            }
         }
 
         this.campaignInputSection.style.display = 'none';
@@ -603,6 +715,94 @@ class AetherSegmentApp {
         this.refineSegmentSection.style.display = 'block';
         this.segmentDetailsSection.style.display = 'none';
         setTimeout(() => scrollToElement(this.refineSegmentSection), 100);
+    }
+
+    async showManualMode() {
+        // Set manual mode flag
+        this.isManualMode = true;
+        this.currentAnalysis = null;
+        this.currentCampaignObjective = null;
+        this.selectedTrigger = null;
+        
+        // Clear all filters
+        this.clearFilters();
+        
+        // Show manual mode indicator, hide AI mode indicator
+        const refineStepIndicator = document.getElementById('refine-step-indicator');
+        const manualModeIndicator = document.getElementById('manual-mode-indicator');
+        if (refineStepIndicator) refineStepIndicator.style.display = 'none';
+        if (manualModeIndicator) manualModeIndicator.style.display = 'block';
+        
+        // Hide AI filters section
+        const aiFiltersReview = document.getElementById('ai-filters-review');
+        if (aiFiltersReview) {
+            const aiFiltersCard = aiFiltersReview.closest('.results-card');
+            if (aiFiltersCard) aiFiltersCard.style.display = 'none';
+        }
+        
+        // Show loading in dashboard
+        const triggerFilteredDashboard = document.getElementById('trigger-filtered-dashboard');
+        if (triggerFilteredDashboard) {
+            triggerFilteredDashboard.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="spinner" style="margin: 0 auto 1rem;"></div>
+                    <p>Loading all customers...</p>
+                </div>
+            `;
+        }
+        
+        // Show the refine section
+        this.campaignInputSection.style.display = 'none';
+        this.analysisResultsSection.style.display = 'none';
+        this.refineSegmentSection.style.display = 'block';
+        this.segmentDetailsSection.style.display = 'none';
+        
+        // Get base customer stats (all customers, no filters)
+        try {
+            const stats = await apiClient.getOverviewStats();
+            
+            // Create a basic segment metadata for display
+            this.currentSegmentMetadata = {
+                total_customers: stats.metrics.total_customers,
+                avg_clv_score: stats.metrics.avg_clv_score,
+                segment_name: 'All Customers (Unfiltered)',
+                countries: stats.geographic_distribution,
+                value_segments: stats.value_segments
+            };
+            
+            // Display the base stats
+            if (triggerFilteredDashboard) {
+                triggerFilteredDashboard.innerHTML = `
+                    <div class="stat-grid-compact">
+                        <div class="stat-item-compact">
+                            <span class="stat-label-compact">Total Customers</span>
+                            <span class="stat-value-compact">${this.currentSegmentMetadata.total_customers.toLocaleString()}</span>
+                        </div>
+                        <div class="stat-item-compact">
+                            <span class="stat-label-compact">Avg CLV Score</span>
+                            <span class="stat-value-compact">${Math.round(this.currentSegmentMetadata.avg_clv_score * 100)}%</span>
+                        </div>
+                    </div>
+                    <p style="color: #6b7280; font-size: 0.85rem; margin-top: 1rem;">
+                        Apply filters below to narrow down this segment
+                    </p>
+                `;
+            }
+            
+            showToast('Manual mode activated - apply filters to build your segment', 'info');
+            setTimeout(() => scrollToElement(this.refineSegmentSection), 100);
+            
+        } catch (error) {
+            console.error('Error loading base stats:', error);
+            showToast('Failed to load customer data', 'error');
+            
+            // Show error state
+            if (triggerFilteredDashboard) {
+                triggerFilteredDashboard.innerHTML = `
+                    <p style="color: #dc2626; padding: 1rem;">Failed to load customer data. Please try again.</p>
+                `;
+            }
+        }
     }
 
 
@@ -705,7 +905,8 @@ class AetherSegmentApp {
     }
 
     async previewFilterImpact() {
-        if (!this.currentAnalysis) {
+        // In manual mode, we don't need currentAnalysis
+        if (!this.currentAnalysis && !this.isManualMode) {
             showToast('No campaign analysis found', 'error');
             return;
         }
@@ -713,12 +914,27 @@ class AetherSegmentApp {
         // Collect filter values
         const filters = {};
         
+        // Location filters
         const country = document.getElementById('filter-country').value;
         if (country) filters.location_country = country;
 
         const city = document.getElementById('filter-city').value;
         if (city) filters.location_city = city;
 
+        // Demographic filters
+        const ageMin = document.getElementById('filter-age-min').value;
+        if (ageMin) filters.age_min = parseInt(ageMin);
+
+        const ageMax = document.getElementById('filter-age-max').value;
+        if (ageMax) filters.age_max = parseInt(ageMax);
+
+        const gender = document.getElementById('filter-gender').value;
+        if (gender) filters.gender = gender;
+
+        const income = document.getElementById('filter-income').value;
+        if (income) filters.income_level = income;
+
+        // Value filters
         const clvMin = document.getElementById('filter-clv-min').value;
         if (clvMin) filters.clv_min = parseFloat(clvMin) / 100; // Convert % to decimal
 
@@ -740,8 +956,11 @@ class AetherSegmentApp {
         previewBtn.disabled = true;
 
         try {
+            // In manual mode, pass null as campaign objective
+            const campaignObj = this.isManualMode ? null : this.currentAnalysis.campaign_objective_object;
+            
             const preview = await apiClient.previewFilters(
-                this.currentAnalysis.campaign_objective_object,
+                campaignObj,
                 filters,
                 selectedTrigger  // Pass the selected trigger so backend applies trigger filter
             );
@@ -921,8 +1140,17 @@ class AetherSegmentApp {
     }
 
     clearFilters() {
+        // Location filters
         document.getElementById('filter-country').value = '';
         document.getElementById('filter-city').value = '';
+        
+        // Demographic filters
+        document.getElementById('filter-age-min').value = '';
+        document.getElementById('filter-age-max').value = '';
+        document.getElementById('filter-gender').value = '';
+        document.getElementById('filter-income').value = '';
+        
+        // Value filters
         document.getElementById('filter-clv-min').value = '';
         document.getElementById('filter-cart-min').value = '';
 
@@ -1135,6 +1363,34 @@ class AetherSegmentApp {
                             </div>
                         ` : ''}
                     </div>
+                    ${coo.demographic_filters && Object.keys(coo.demographic_filters).length > 0 ? `
+                        <div class="demographic-filters">
+                            <h5>🎯 Demographic Targeting</h5>
+                            <div class="filter-badges">
+                                ${coo.demographic_filters.age_min || coo.demographic_filters.age_max ? `
+                                    <span class="filter-badge">Age: ${
+                                        coo.demographic_filters.age_min && coo.demographic_filters.age_max 
+                                            ? `${coo.demographic_filters.age_min}-${coo.demographic_filters.age_max}` 
+                                            : coo.demographic_filters.age_min 
+                                                ? `${coo.demographic_filters.age_min}+` 
+                                                : `up to ${coo.demographic_filters.age_max}`
+                                    }</span>
+                                ` : ''}
+                                ${coo.demographic_filters.gender ? `
+                                    <span class="filter-badge">Gender: ${coo.demographic_filters.gender}</span>
+                                ` : ''}
+                                ${coo.demographic_filters.income_level ? `
+                                    <span class="filter-badge">Income: ${coo.demographic_filters.income_level.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                                ` : ''}
+                                ${coo.demographic_filters.location_country ? `
+                                    <span class="filter-badge">Country: ${coo.demographic_filters.location_country}</span>
+                                ` : ''}
+                                ${coo.demographic_filters.location_city ? `
+                                    <span class="filter-badge">City: ${coo.demographic_filters.location_city}</span>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
             `;
         }
@@ -1282,6 +1538,7 @@ class AetherSegmentApp {
         this.currentSegment = null;
         this.selectedTrigger = null;
         this.appliedFilters = {};
+        this.isManualMode = false;  // Reset manual mode
 
         // Clear components
         this.campaignInput.clear();
@@ -1292,6 +1549,19 @@ class AetherSegmentApp {
 
         // Clear filter inputs
         this.clearFilters();
+        
+        // Restore step indicators (hide manual, show AI)
+        const refineStepIndicator = document.getElementById('refine-step-indicator');
+        const manualModeIndicator = document.getElementById('manual-mode-indicator');
+        if (refineStepIndicator) refineStepIndicator.style.display = 'block';
+        if (manualModeIndicator) manualModeIndicator.style.display = 'none';
+        
+        // Show AI filters section again
+        const aiFiltersReview = document.getElementById('ai-filters-review');
+        if (aiFiltersReview) {
+            const aiFiltersCard = aiFiltersReview.closest('.results-card');
+            if (aiFiltersCard) aiFiltersCard.style.display = 'block';
+        }
 
         // Show campaign input, hide all other sections
         this.campaignInputSection.style.display = 'block';

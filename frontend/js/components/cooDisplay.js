@@ -84,6 +84,48 @@ export class CooDisplayComponent {
                 `<div class="coo-tags">${tags}</div>`
             ));
         }
+
+        // Demographic Filters (NEW)
+        if (coo.demographic_filters && Object.keys(coo.demographic_filters).length > 0) {
+            const demo = coo.demographic_filters;
+            let demoBadges = [];
+            
+            // Age range
+            if (demo.age_min || demo.age_max) {
+                const ageRange = demo.age_min && demo.age_max 
+                    ? `${demo.age_min}-${demo.age_max}` 
+                    : demo.age_min 
+                        ? `${demo.age_min}+` 
+                        : `up to ${demo.age_max}`;
+                demoBadges.push(`<span class="coo-badge badge-info">Age: ${ageRange}</span>`);
+            }
+            
+            // Gender
+            if (demo.gender) {
+                demoBadges.push(`<span class="coo-badge badge-info">Gender: ${demo.gender}</span>`);
+            }
+            
+            // Income level
+            if (demo.income_level) {
+                demoBadges.push(`<span class="coo-badge badge-info">Income: ${this.formatValue(demo.income_level)}</span>`);
+            }
+            
+            // Location
+            if (demo.location_country) {
+                demoBadges.push(`<span class="coo-badge badge-info">Country: ${demo.location_country}</span>`);
+            }
+            
+            if (demo.location_city) {
+                demoBadges.push(`<span class="coo-badge badge-info">City: ${demo.location_city}</span>`);
+            }
+            
+            if (demoBadges.length > 0) {
+                this.container.appendChild(this.createCooItem(
+                    '🎯 Demographic Targeting',
+                    demoBadges.join(' ')
+                ));
+            }
+        }
     }
 
     createCooItem(label, value) {

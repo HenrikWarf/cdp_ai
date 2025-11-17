@@ -569,6 +569,48 @@
     font-weight: 500;
 }
 
+/* Demographic Filters Display */
+.demographic-filters {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: var(--radius-md);
+    border: 1px solid #e5e7eb;
+}
+
+.demographic-filters h5 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.9rem;
+    color: #374151;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+}
+
+.filter-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4rem 0.85rem;
+    background: #e0e7ff;
+    color: #4338ca;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border: 1px solid #c7d2fe;
+    transition: all 0.2s ease;
+}
+
+.filter-badge:hover {
+    background: #c7d2fe;
+    border-color: #a5b4fc;
+    transform: translateY(-1px);
+}
+
 /* Filtering Journey Section */
 .journey-steps {
     background: #ffffff;

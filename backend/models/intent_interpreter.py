@@ -126,6 +126,13 @@ You must identify:
 5. time_constraint: Timeframe for the campaign (e.g., 48_hours_post_abandonment, 7_days, 30_days)
 6. proposed_intervention: ARRAY of intervention types that would work for this campaign. List 1-3 options from: discount, free_shipping, scarcity, exclusivity, social_proof, content, gift_with_purchase, cashback, bundling
 7. underlying_assumptions: Array of strings - marketing psychology assumptions (e.g., ["price_sensitive", "urgency_responsive", "status_seeking"])
+8. demographic_filters: Extract any demographic targeting mentioned (age ranges, gender, income level, location). ONLY include if explicitly mentioned:
+   - age_min: minimum age if age range mentioned (e.g., "20-30" → age_min: 20)
+   - age_max: maximum age if age range mentioned (e.g., "20-30" → age_max: 30)
+   - gender: "Male", "Female", or "Non-Binary" if gender mentioned
+   - income_level: "low", "medium", "high", or "premium" if income/affluent/wealthy mentioned
+   - location_country: Full country name if country mentioned (e.g., "USA" → "United States", "UK" → "United Kingdom")
+   - location_city: City name if city mentioned (e.g., "London", "New York")
 
 Campaign Objective to analyze: "{campaign_objective}"
 
@@ -147,13 +154,23 @@ OUTPUT FORMAT - CRITICAL INSTRUCTIONS:
   }},
   "time_constraint": "<time_constraint>",
   "proposed_intervention": ["discount", "free_shipping"],
-  "underlying_assumptions": ["assumption1", "assumption2"]
+  "underlying_assumptions": ["assumption1", "assumption2"],
+  "demographic_filters": {{
+    "age_min": 25,
+    "age_max": 35,
+    "gender": "Female",
+    "income_level": "high",
+    "location_country": "United States",
+    "location_city": "New York"
+  }}
 }}
 
 CRITICAL REQUIREMENTS: 
 - metric_target.value MUST be a numeric decimal (0.20 for 20%, 0.15 for 15%, etc.)
 - proposed_intervention MUST be an ARRAY of 1-3 intervention strings - these will be evaluated and ranked
 - underlying_assumptions MUST be an array of strings
+- demographic_filters is OPTIONAL - only include if demographics are mentioned in the objective
+- If demographic_filters is included, only include the fields that are mentioned (age_min, age_max, gender, income_level, location_country, location_city)
 - target_behavior should use underscore_case from the list above (abandoned_cart, lapsed_customer, high_engagement, cross_sell, new_customer, retention, reactivation)
 - All field names must match exactly as shown
 - Return ONLY the JSON - nothing before or after it
@@ -232,6 +249,16 @@ Ensure all values are specific and actionable. Use standardized terminology."""
         else:
             underlying_assumptions = []
         
+        # Handle demographic_filters - optional field
+        demographic_filters = parsed_data.get('demographic_filters', None)
+        if demographic_filters and isinstance(demographic_filters, dict):
+            # Clean up the demographic filters - remove None values and empty strings
+            demographic_filters = {k: v for k, v in demographic_filters.items() if v is not None and v != ''}
+            if not demographic_filters:
+                demographic_filters = None
+        else:
+            demographic_filters = None
+        
         return CampaignObjectiveObject(
             campaign_goal=parsed_data.get('campaign_goal', 'conversion'),
             target_behavior=parsed_data.get('target_behavior', 'general'),
@@ -239,7 +266,8 @@ Ensure all values are specific and actionable. Use standardized terminology."""
             metric_target=metric_target,
             time_constraint=parsed_data.get('time_constraint'),
             proposed_intervention=proposed_intervention,
-            underlying_assumptions=underlying_assumptions
+            underlying_assumptions=underlying_assumptions,
+            demographic_filters=demographic_filters
         )
     
     def classify_trigger_type(self, intervention: str) -> str:

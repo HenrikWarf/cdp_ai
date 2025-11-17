@@ -137,6 +137,7 @@ Six comprehensive tables created:
 
 ### AI-Driven Capabilities
 ✅ Natural language campaign objective interpretation (Gemini 2.5 Flash)  
+✅ **Demographic targeting extraction** (age, gender, income, location)  
 ✅ Multi-trigger uplift modeling with T-Learner/X-Learner  
 ✅ Causal inference (not just correlation)  
 ✅ Dynamic segmentation criteria generation  
@@ -179,6 +180,9 @@ The application follows a streamlined 3-step process:
 ```
 Example: "Win back lapsed customers with high lifetime value 
 using exclusive 20% discount to reactivate 15% within 30 days"
+
+With Demographics: "Target high-income women aged 35-50 in London 
+with abandoned carts to increase conversion by 25%"
 ```
 
 **What Happens Behind the Scenes**:
@@ -190,6 +194,7 @@ using exclusive 20% discount to reactivate 15% within 30 days"
    - Metric Target: 15% reactivation rate
    - Time Constraint: "30_days"
    - Proposed Intervention: ["discount", "exclusive_offer"]
+   - **Demographic Filters**: age (35-50), gender (Female), income (high), location (London)
 
 3. **Query Generation**: Dynamic SQL query is built from COO
 4. **Segment Preview**: BigQuery returns preliminary segment size and stats
@@ -427,6 +432,18 @@ ai_cdp/
 - Step-by-step filtering journey visualization
 - Final result with CLV interpretation
 - **Result**: Complete transparency of AI decision-making
+
+### Demographic Targeting (New Feature)
+**Addition**: AI now extracts and applies demographic filters from natural language  
+**Implementation**:
+- **Backend**: Added age, gender, income_level fields to BigQuery customers table
+- **AI**: Enhanced Gemini prompt to extract demographic targeting
+- **Query Builder**: Automatic SQL filter generation for demographics
+- **Frontend**: Visual badges displaying applied demographic filters
+- **Examples**:
+  - "Target women aged 25-35 in New York" → filters automatically applied
+  - "Campaign for high-income males aged 40-60" → demographic-aware segment
+- **Result**: More precise targeting, richer customer profiling
 
 ### UI/UX Refinements (Latest Update)
 - Clean, minimalist color palette (removed purple gradients)

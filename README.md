@@ -79,6 +79,7 @@ The platform consists of three main applications:
 
 #### `customers` (10,000 records)
 - Customer identity and demographics
+- **Demographic data**: Age (18-75), Gender, Income Level (low/medium/high/premium)
 - Location data (city, country)
 - CLV scores (0-1 scale, with business-friendly interpretation)
 - Acquisition source and creation date
@@ -109,6 +110,34 @@ The platform consists of three main applications:
 - Discount sensitivity, free shipping sensitivity
 - Churn probability, content engagement
 - Exclusivity seeker flags
+
+#### `cdp_data.customers` ⭐ **NEW - Conversational Segmentation**
+- **Purpose**: Consolidated customer table for conversational AI queries
+- **Location**: Separate `cdp_data` dataset for clean separation from raw data
+- **One row per customer** with 100+ pre-aggregated columns
+- **Combines all tables**: Profile + Scores + Transactions + Carts + Events + Campaigns
+- **Time-windowed metrics**: All-time, 90-day, and 30-day aggregations
+- **Key metrics**:
+  - Transaction history (purchases, revenue, AOV by time window)
+  - Cart abandonment (counts, values, recency)
+  - Behavioral engagement (events, views, engagement rate)
+  - Campaign response (conversion rates, best triggers)
+  - Product affinities (10 categories, purchase profiles)
+- **Performance**: Single-table queries (no JOINs), <1s response time
+- **Refresh**: Auto-built after data generation, manual refresh available
+- **Documentation**: See `conversational_segmentation/README.md` for full schema and query examples
+
+**Build Commands:**
+```bash
+# Auto-built when generating data
+python scripts/generate_data.py
+
+# Manual build/rebuild (creates cdp_data.customers)
+python scripts/build_customers_unified_table.py
+
+# Scheduled refresh (recommended: daily)
+python scripts/refresh_customers_unified.py
+```
 
 ## 🚀 Setup Instructions
 
@@ -294,6 +323,32 @@ to encourage first purchase and boost repeat rate by 30%"
 ```
 "Target high CLV customers in London and Manchester with exclusive 
 new product launches to drive regional sales growth"
+```
+
+### Demographic Targeting Examples
+
+#### Age-Based Campaign
+```
+"Target people aged 20-30 living in the USA with abandoned carts 
+to increase conversion by 25%"
+```
+
+#### Gender & Income Targeting
+```
+"Campaign for high-income women in London who haven't purchased in 90 days 
+with exclusive offers to win them back"
+```
+
+#### Multi-Demographic Targeting
+```
+"Re-engage male customers aged 35-50 in Canada with high CLV 
+using free shipping to boost repeat purchases by 20%"
+```
+
+#### Premium Segment Campaign
+```
+"Target premium income customers aged 40-60 in Australia 
+with exclusive early access to new furniture collections"
 ```
 
 ## 🎨 UI Workflow
@@ -482,7 +537,9 @@ Send a natural language query to the agent
 ### 1. Campaign Intent Interpretation (Gemini 2.5 Flash)
 - Parses natural language into structured Campaign Objective Object
 - Extracts: goal, target behavior, metric targets, time constraints
+- **NEW**: Extracts demographic filters (age ranges, gender, income level, location)
 - Maps to standardized trigger types
+- Automatically applies demographic filters to SQL queries
 
 ### 2. Uplift Score Simulation
 - Simulates causal effects of different marketing triggers
@@ -500,8 +557,10 @@ Send a natural language query to the agent
   - Campaign Goal, Target Behavior, Target Subgroup
   - Time Constraint, Proposed Intervention, Metric Target
   - Underlying Assumptions
+  - **NEW**: Demographic Targeting (age, gender, income, location)
 - **Filtering Journey**: Step-by-step visualization of segment creation
   - AI behavioral filters
+  - Demographic filters automatically applied
   - Trigger selection with sensitivity thresholds
   - Manual refinements
 - **Final Characteristics**: Complete segment summary with CLV interpretation
@@ -654,14 +713,15 @@ ai_cdp/
 
 This prototype demonstrates:
 1. ✅ LLM-powered campaign interpretation (Gemini 2.5 Flash)
-2. ✅ Dynamic customer segmentation with real-time updates
-3. ✅ Uplift modeling for trigger optimization
-4. ✅ Streamlined 3-step user workflow design
-5. ✅ SQLite caching with lazy loading for performance
-6. ✅ Real-time data integration patterns
-7. ✅ Comprehensive explainable AI for marketing
-8. ✅ Modern CDP architecture with BigQuery
-9. ✅ Cost-optimized query patterns (90% reduction in BigQuery queries)
+2. ✅ **Demographic-aware segmentation** (age, gender, income targeting)
+3. ✅ Dynamic customer segmentation with real-time updates
+4. ✅ Uplift modeling for trigger optimization
+5. ✅ Streamlined 3-step user workflow design
+6. ✅ SQLite caching with lazy loading for performance
+7. ✅ Real-time data integration patterns
+8. ✅ Comprehensive explainable AI for marketing
+9. ✅ Modern CDP architecture with BigQuery
+10. ✅ Cost-optimized query patterns (90% reduction in BigQuery queries)
 
 ## 📄 License
 

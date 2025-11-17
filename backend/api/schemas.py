@@ -60,6 +60,7 @@ class CampaignObjectiveObject(BaseModel):
     time_constraint: Optional[str] = None
     proposed_intervention: List[str]  # List of potential intervention types for evaluation
     underlying_assumptions: List[str] = []
+    demographic_filters: Optional[Dict[str, Any]] = None  # Age, gender, income, location filters
     
     class Config:
         json_schema_extra = {
@@ -70,7 +71,15 @@ class CampaignObjectiveObject(BaseModel):
                 "metric_target": {"type": "conversion_rate_increase", "value": 0.20},
                 "time_constraint": "48_hours_post_abandonment",
                 "proposed_intervention": ["discount", "free_shipping"],
-                "underlying_assumptions": ["price_sensitive", "prior_engagement_with_products"]
+                "underlying_assumptions": ["price_sensitive", "prior_engagement_with_products"],
+                "demographic_filters": {
+                    "age_min": 25,
+                    "age_max": 35,
+                    "gender": "Female",
+                    "income_level": "high",
+                    "location_country": "United States",
+                    "location_city": "New York"
+                }
             }
         }
 

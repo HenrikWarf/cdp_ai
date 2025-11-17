@@ -74,6 +74,9 @@ class QueryBuilder:
             "c.location_city",
             "c.location_country",
             "c.clv_score",
+            "c.age",
+            "c.gender",
+            "c.income_level",
             "cs.discount_sensitivity_score",
             "cs.free_shipping_sensitivity_score",
             "cs.exclusivity_seeker_flag",
@@ -208,6 +211,38 @@ class QueryBuilder:
         product_filters = self._extract_product_affinity_filters(coo)
         if product_filters:
             conditions.extend(product_filters)
+        
+        # Demographic filters (age, gender, income level, location)
+        if coo.demographic_filters:
+            demo = coo.demographic_filters
+            
+            # Age range filters
+            if demo.get('age_min'):
+                conditions.append(f"c.age >= {demo['age_min']}")
+                print(f"   👤 Age filter: >= {demo['age_min']}")
+            
+            if demo.get('age_max'):
+                conditions.append(f"c.age <= {demo['age_max']}")
+                print(f"   👤 Age filter: <= {demo['age_max']}")
+            
+            # Gender filter
+            if demo.get('gender'):
+                conditions.append(f"c.gender = '{demo['gender']}'")
+                print(f"   👤 Gender filter: {demo['gender']}")
+            
+            # Income level filter
+            if demo.get('income_level'):
+                conditions.append(f"c.income_level = '{demo['income_level']}'")
+                print(f"   💰 Income filter: {demo['income_level']}")
+            
+            # Location filters (country and city)
+            if demo.get('location_country'):
+                conditions.append(f"LOWER(c.location_country) = LOWER('{demo['location_country']}')")
+                print(f"   📍 Country filter: {demo['location_country']}")
+            
+            if demo.get('location_city'):
+                conditions.append(f"LOWER(c.location_city) = LOWER('{demo['location_city']}')")
+                print(f"   📍 City filter: {demo['location_city']}")
         
         # Uplift score conditions based on selected trigger
         if uplift_scores:
