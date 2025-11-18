@@ -24,14 +24,25 @@ Write-Host ""
 
 # Check if .env file exists
 if (-not (Test-Path ".env")) {
-    Write-Host "ERROR: .env file not found!" -ForegroundColor Red
+    Write-Host "ERROR: .env file not found in project root!" -ForegroundColor Red
     Write-Host "   Please create a .env file with required configuration" -ForegroundColor Red
-    Write-Host "   See env_template_chat.txt for reference" -ForegroundColor Red
+    Write-Host "   See env_template.txt for reference" -ForegroundColor Red
     Write-Host ""
     exit 1
 }
 
-Write-Host "OK Configuration file found (.env)" -ForegroundColor Green
+Write-Host "OK Configuration file found (project root .env)" -ForegroundColor Green
+
+# Check if conversational segmentation .env exists
+if (-not (Test-Path "conversational_segmentation\.env")) {
+    Write-Host "WARNING: .env file not found in conversational_segmentation\" -ForegroundColor Yellow
+    Write-Host "   Conversational segmentation may not work properly" -ForegroundColor Yellow
+    Write-Host "   Please create conversational_segmentation\.env" -ForegroundColor Yellow
+    Write-Host ""
+} else {
+    Write-Host "OK Conversational segmentation .env found" -ForegroundColor Green
+}
+
 Write-Host ""
 
 # Function to check if port is in use
@@ -65,6 +76,37 @@ if ($portsInUse.Count -gt 0) {
         Write-Host "Cancelled." -ForegroundColor Red
         exit 1
     }
+    Write-Host ""
+}
+
+# Check if required Python packages are installed
+Write-Host "Checking dependencies..." -ForegroundColor Yellow
+if (Test-Path "venv\Scripts\Activate.ps1") {
+    & .\venv\Scripts\Activate.ps1
+}
+
+$missingDeps = @()
+try { python -c "import flask" 2>$null } catch { $missingDeps += "flask" }
+try { python -c "import fastapi" 2>$null } catch { $missingDeps += "fastapi" }
+try { python -c "import uvicorn" 2>$null } catch { $missingDeps += "uvicorn" }
+try { python -c "import google.genai" 2>$null } catch { $missingDeps += "google-genai" }
+
+if ($missingDeps.Count -gt 0) {
+    Write-Host "WARNING: Some Python packages appear to be missing:" -ForegroundColor Yellow
+    foreach ($dep in $missingDeps) {
+        Write-Host "   - $dep" -ForegroundColor Yellow
+    }
+    Write-Host ""
+    Write-Host "You may need to run: pip install -r requirements.txt" -ForegroundColor Yellow
+    Write-Host ""
+    $continue = Read-Host "Continue anyway? (y/n)"
+    if ($continue -ne "y") {
+        Write-Host "Cancelled." -ForegroundColor Red
+        exit 1
+    }
+    Write-Host ""
+} else {
+    Write-Host "OK Core dependencies found" -ForegroundColor Green
     Write-Host ""
 }
 
@@ -102,7 +144,7 @@ Write-Host ""
 Write-Host "Access the application:" -ForegroundColor Cyan
 Write-Host "  - Overview Dashboard:            http://localhost:5500/index.html" -ForegroundColor White
 Write-Host "  - Campaign Segmentation:         http://localhost:5500/campaign-segmentation.html" -ForegroundColor White
-Write-Host "  - Conversational Segmentation:   http://localhost:5500/conversational-analytics.html" -ForegroundColor White
+Write-Host "  - Conversational Segmentation:   http://localhost:8001" -ForegroundColor White
 Write-Host ""
 Write-Host "To stop all services:" -ForegroundColor Yellow
 Write-Host "  - Close each PowerShell window" -ForegroundColor White

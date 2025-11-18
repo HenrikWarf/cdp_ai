@@ -34,14 +34,25 @@ echo ""
 
 # Check if .env file exists
 if [ ! -f ".env" ]; then
-    echo -e "${RED}❌ ERROR: .env file not found!${NC}"
+    echo -e "${RED}❌ ERROR: .env file not found in project root!${NC}"
     echo -e "${RED}   Please create a .env file with required configuration${NC}"
-    echo -e "${RED}   See env_template_chat.txt for reference${NC}"
+    echo -e "${RED}   See env_template.txt for reference${NC}"
     echo ""
     exit 1
 fi
 
-echo -e "${GREEN}✓ Configuration file found (.env)${NC}"
+echo -e "${GREEN}✓ Configuration file found (project root .env)${NC}"
+
+# Check if conversational segmentation .env exists
+if [ ! -f "conversational_segmentation/.env" ]; then
+    echo -e "${YELLOW}⚠ Warning: .env file not found in conversational_segmentation/${NC}"
+    echo -e "${YELLOW}   Conversational segmentation may not work properly${NC}"
+    echo -e "${YELLOW}   Please create conversational_segmentation/.env${NC}"
+    echo ""
+else
+    echo -e "${GREEN}✓ Conversational segmentation .env found${NC}"
+fi
+
 echo ""
 
 # Function to check if port is in use
@@ -71,6 +82,38 @@ if [ ${#PORTS_IN_USE[@]} -gt 0 ]; then
         echo -e "${RED}Cancelled.${NC}"
         exit 1
     fi
+    echo ""
+fi
+
+# Check if required Python packages are installed
+echo -e "${YELLOW}Checking dependencies...${NC}"
+if [ -d "venv" ]; then
+    source venv/bin/activate
+fi
+
+MISSING_DEPS=()
+python -c "import flask" 2>/dev/null || MISSING_DEPS+=("flask")
+python -c "import fastapi" 2>/dev/null || MISSING_DEPS+=("fastapi")
+python -c "import uvicorn" 2>/dev/null || MISSING_DEPS+=("uvicorn")
+python -c "import google.genai" 2>/dev/null || MISSING_DEPS+=("google-genai")
+
+if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
+    echo -e "${YELLOW}⚠ Warning: Some Python packages appear to be missing:${NC}"
+    for dep in "${MISSING_DEPS[@]}"; do
+        echo -e "${YELLOW}   - $dep${NC}"
+    done
+    echo ""
+    echo -e "${YELLOW}You may need to run: pip install -r requirements.txt${NC}"
+    echo ""
+    read -p "Continue anyway? (y/n) " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${RED}Cancelled.${NC}"
+        exit 1
+    fi
+    echo ""
+else
+    echo -e "${GREEN}✓ Core dependencies found${NC}"
     echo ""
 fi
 
@@ -132,7 +175,7 @@ echo ""
 echo -e "${CYAN}Access the application:${NC}"
 echo -e "${WHITE}  • Overview Dashboard:            http://localhost:5500/index.html${NC}"
 echo -e "${WHITE}  • Campaign Segmentation:         http://localhost:5500/campaign-segmentation.html${NC}"
-echo -e "${WHITE}  • Conversational Segmentation:   http://localhost:5500/conversational-analytics.html${NC}"
+echo -e "${WHITE}  • Conversational Segmentation:   http://localhost:8001${NC}"
 echo ""
 echo -e "${CYAN}Logs are saved in:${NC}"
 echo -e "${WHITE}  • logs/flask_api.log${NC}"

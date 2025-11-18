@@ -66,6 +66,34 @@ if ($process) {
 
 Write-Host ""
 
+# Check for any remaining Python processes related to our services
+Write-Host "Checking for orphaned Python processes..." -ForegroundColor Yellow
+$pythonProcesses = Get-Process python* -ErrorAction SilentlyContinue | Where-Object {
+    $_.CommandLine -like "*run.py*" -or 
+    $_.CommandLine -like "*run_segmentation.py*" -or
+    $_.CommandLine -like "*http.server*"
+}
+
+if ($pythonProcesses) {
+    Write-Host "  Found $($pythonProcesses.Count) orphaned process(es)" -ForegroundColor Yellow
+    $cleanup = Read-Host "  Stop these processes too? (y/n)"
+    if ($cleanup -eq "y") {
+        foreach ($proc in $pythonProcesses) {
+            try {
+                Stop-Process -Id $proc.Id -Force -ErrorAction Stop
+                Write-Host "  OK Stopped orphaned process (PID: $($proc.Id))" -ForegroundColor Green
+                $stopped++
+            } catch {
+                Write-Host "  WARNING: Could not stop process (PID: $($proc.Id))" -ForegroundColor Yellow
+            }
+        }
+    }
+} else {
+    Write-Host "  No orphaned processes found" -ForegroundColor Green
+}
+
+Write-Host ""
+
 if ($stopped -gt 0) {
     Write-Host "============================================================" -ForegroundColor Green
     Write-Host "  $stopped service(s) stopped successfully" -ForegroundColor Green

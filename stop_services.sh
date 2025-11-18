@@ -53,18 +53,25 @@ else
     
     # Try to find and kill processes by port
     if command -v lsof &> /dev/null; then
-        for PORT in 5000 8000 5500; do
+        # Define services with descriptive names
+        declare -A SERVICES
+        SERVICES[5000]="Flask API"
+        SERVICES[8001]="Conversational Segmentation"
+        SERVICES[5500]="Frontend"
+        
+        for PORT in 5000 8001 5500; do
             PID=$(lsof -ti:$PORT)
             if [ ! -z "$PID" ]; then
-                echo -e "${YELLOW}  Stopping service on port $PORT (PID: $PID)...${NC}"
+                echo -e "${YELLOW}  Stopping ${SERVICES[$PORT]} on port $PORT (PID: $PID)...${NC}"
                 kill $PID 2>/dev/null
                 sleep 1
                 if lsof -ti:$PORT > /dev/null 2>&1; then
+                    echo -e "${YELLOW}  Force killing ${SERVICES[$PORT]}...${NC}"
                     kill -9 $PID 2>/dev/null
                 fi
-                echo -e "${GREEN}  ✓ Service on port $PORT stopped${NC}"
+                echo -e "${GREEN}  ✓ ${SERVICES[$PORT]} stopped${NC}"
             else
-                echo -e "${YELLOW}  No service running on port $PORT${NC}"
+                echo -e "${YELLOW}  No service running on port $PORT (${SERVICES[$PORT]})${NC}"
             fi
         done
         echo ""
@@ -76,6 +83,35 @@ else
         echo "  2. Stop them: kill <PID>"
     fi
 fi
+
+echo ""
+
+# Check for any remaining Python processes related to our services
+echo -e "${YELLOW}Checking for orphaned Python processes...${NC}"
+ORPHANED_PIDS=$(ps aux | grep -E "(run\.py|run_segmentation\.py|http\.server)" | grep -v grep | awk '{print $2}')
+
+if [ ! -z "$ORPHANED_PIDS" ]; then
+    echo -e "${YELLOW}  Found orphaned process(es):${NC}"
+    ps aux | grep -E "(run\.py|run_segmentation\.py|http\.server)" | grep -v grep | awk '{print "    PID: " $2 " - " $11 " " $12 " " $13}'
+    echo ""
+    read -p "  Stop these processes? (y/n) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        for PID in $ORPHANED_PIDS; do
+            echo -e "${YELLOW}  Stopping orphaned process (PID: $PID)...${NC}"
+            kill $PID 2>/dev/null
+            sleep 0.5
+            if ps -p $PID > /dev/null 2>&1; then
+                kill -9 $PID 2>/dev/null
+            fi
+            echo -e "${GREEN}  ✓ Stopped PID $PID${NC}"
+        done
+    fi
+else
+    echo -e "${GREEN}  ✓ No orphaned processes found${NC}"
+fi
+
+echo ""
 
 # Clean up log files (optional)
 read -p "Do you want to clear log files? (y/n) " -n 1 -r
