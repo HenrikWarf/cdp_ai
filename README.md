@@ -28,9 +28,11 @@ An AI-first Customer Data Platform designed for a fictional home furnishing reta
 ### Tech Stack
 - **Data Layer**: Google BigQuery (GCP) + SQLite3 (local cache)
 - **Backend**: Python (Flask + FastAPI), Pandas, NumPy
-- **AI/LLM**: Google Gemini 2.5 Flash via Vertex AI + Google ADK
-- **Agent Framework**: Google ADK (Agent Development Kit) for conversational queries
-- **Frontend**: Vanilla HTML/CSS/JavaScript (Modular)
+- **AI/LLM**: Google Gemini 2.5 Flash/Pro via Vertex AI + Google ADK
+- **Agent Framework**: Google ADK (Agent Development Kit) with multi-agent orchestration
+- **Frontend**: Vanilla HTML/CSS/JavaScript + React 18 (conversational UI)
+- **Visualization**: Chart.js 4.4 with smart chart detection
+- **Real-time Communication**: WebSocket (FastAPI)
 - **Deployment**: Local development server
 
 ### Application Pages
@@ -54,24 +56,28 @@ The platform consists of three main applications:
    - Comprehensive explainability with full AI interpretation
    - Export and activation capabilities (JSON, CSV, API)
 
-3. **💬 Conversational Analytics** (Next.js App - `ai-cdp/`)
-   - **NEW!** Full-featured conversational interface powered by CopilotKit + Google ADK + Gemini 2.5 Flash
-   - Modern Next.js frontend with real-time state synchronization via AG-UI Protocol
-   - Chat sidebar with professional UI and data tables in main content area
-   - Natural language queries for customers, segments, and revenue trends
-   - Multi-turn conversations with context awareness
-   - Runs on FastAPI backend (port 8000) + Next.js frontend (port 3000)
-   - See `ai-cdp/README.md` and `ai-cdp/QUICKSTART.md` for setup
+3. **💬 Conversational Segmentation Explorer** (`conversational_segmentation/`)
+   - **NEW!** Professional split-view data explorer with multi-agent architecture
+   - Powered by Google ADK (Agent Development Kit) with Gemini 2.5 Pro/Flash
+   - **Split-view interface**: Chat (40%) + Results Explorer (60%)
+   - **Multi-agent system**: Customer Analyst → Segmentation Expert → BigQuery Expert
+   - **Chart visualization**: Smart detection + Chart.js (bar, line, pie, doughnut)
+   - **Data export**: CSV, JSON, PNG, Copy to clipboard
+   - **Material Design 3**: Purple theme matching main app with glass morphism
+   - Natural language queries for customer segmentation and data exploration
+   - Real-time agent status with WebSocket communication
+   - Runs on FastAPI (port 8001) - See `conversational_segmentation/README.md`
 
 ### Key Components
 
 1. **Campaign Intent Interpreter** - Gemini-powered natural language processor
 2. **Causal Segmentation Engine** - Uplift score simulation for trigger optimization
 3. **SQLite Cache Service** - Persistent local caching for dashboard performance
-4. **Conversational Analytics Agent** - **NEW!** ADK-powered agent with CopilotKit frontend for natural language data queries (see `ai-cdp/`)
-5. **BigQuery Data Layer** - Synthetic customer dataset with rich behavioral attributes
-6. **REST API** - Flask (port 5000) for campaigns/segments + FastAPI (port 8000) for conversational analytics
-7. **Modular UI** - Shared navigation (HTML/CSS/JS) + Next.js app for conversational analytics
+4. **Multi-Agent System** - **NEW!** Three specialized agents (Customer Analyst, Segmentation Expert, BigQuery Expert) with Google ADK orchestration
+5. **Chart Visualization Engine** - **NEW!** Smart chart detection with Chart.js (bar, line, pie, doughnut)
+6. **BigQuery Data Layer** - Synthetic customer dataset with rich behavioral attributes
+7. **REST API** - Flask (port 5000) for campaigns/segments + FastAPI (port 8001) for conversational explorer
+8. **Modular UI** - Material Design 3 with split-view data explorer interface
 
 ## 📊 Data Model
 
@@ -572,18 +578,20 @@ Send a natural language query to the agent
 - Shows comparison to baseline and percentile rankings
 - Provides actionable insights for each segment's value profile
 
-### 6. Conversational Analytics (Google ADK + Gemini 2.5 Flash)
-- **Natural Language Queries**: Ask questions in plain English
-- **Intelligent Tool Selection**: Agent automatically chooses the right BigQuery query tool
-- **Structured Data Display**: Results shown as tables, statistics, and insights
-- **Context Awareness**: Agent understands customer data domain
-- **Six Query Tools**:
-  - `query_customers`: Search and filter customer profiles
-  - `get_customer_statistics`: Overview metrics and KPIs
-  - `query_transactions`: Transaction history analysis
-  - `query_behavioral_events`: Behavioral data exploration
-  - `query_abandoned_carts`: Cart abandonment tracking
-  - `get_clv_analysis`: CLV breakdown by country
+### 6. Conversational Segmentation Explorer (Google ADK + Multi-Agent System)
+- **Multi-Agent Architecture**: Three specialized agents collaborating on customer data analysis
+  - **Customer Analyst** (Gemini 2.5 Pro): Main orchestrator, routes queries to specialists
+  - **Segmentation Expert** (Gemini 2.5 Flash): Executes segmentation logic, validates results
+  - **BigQuery Expert**: Handles data queries, schema inspection, table browsing
+- **Natural Language Queries**: Ask questions in plain English about customer data
+- **Split-View Interface**: Chat conversation (40%) + Results explorer tabs (60%)
+- **Smart Chart Visualization**: Automatic detection of best chart type (bar, line, pie, doughnut)
+- **Interactive Data Tables**: Sortable columns with export (CSV, JSON, Copy)
+- **SQL Query Display**: Shows generated queries with copy-to-clipboard
+- **Real-time Agent Status**: See which agent is thinking/working in the UI
+- **WebSocket Communication**: Streams agent events and thinking process
+- **Material Design 3**: Professional UI with purple theme and glass morphism
+- **Export Capabilities**: Data (CSV/JSON), Charts (PNG), SQL queries
 
 ### 7. Product Affinity Intelligence
 A comprehensive product recommendation and targeting system with three levels:
@@ -699,6 +707,16 @@ ai_cdp/
 - **Modular Services**: Separated caching logic for maintainability
 - **Production-Ready**: Proper database initialization and connection management
 
+### Conversational Segmentation Explorer (New Application)
+- **Multi-Agent System**: Three specialized AI agents (Customer Analyst, Segmentation Expert, BigQuery Expert)
+- **Split-View Interface**: Professional data explorer with chat (40%) + results tabs (60%)
+- **Smart Chart Detection**: Automatic chart type selection (line, bar, pie, doughnut) based on data structure
+- **Chart.js Integration**: Interactive visualizations with Material Design purple theme
+- **Export Capabilities**: CSV, JSON, PNG image export, SQL query copy
+- **WebSocket Communication**: Real-time agent status and thinking process visibility
+- **Material Design 3**: Glass morphism, elevation shadows, smooth animations
+- **Google ADK**: Multi-agent orchestration with task delegation and routing
+
 ## 📝 Notes
 
 - **Synthetic Data**: All customer data is fictional and generated for demonstration purposes
@@ -712,16 +730,21 @@ ai_cdp/
 ## 🎓 Learning Outcomes
 
 This prototype demonstrates:
-1. ✅ LLM-powered campaign interpretation (Gemini 2.5 Flash)
-2. ✅ **Demographic-aware segmentation** (age, gender, income targeting)
-3. ✅ Dynamic customer segmentation with real-time updates
-4. ✅ Uplift modeling for trigger optimization
-5. ✅ Streamlined 3-step user workflow design
-6. ✅ SQLite caching with lazy loading for performance
-7. ✅ Real-time data integration patterns
-8. ✅ Comprehensive explainable AI for marketing
-9. ✅ Modern CDP architecture with BigQuery
-10. ✅ Cost-optimized query patterns (90% reduction in BigQuery queries)
+1. ✅ LLM-powered campaign interpretation (Gemini 2.5 Flash/Pro)
+2. ✅ **Multi-agent architecture** with Google ADK (Customer Analyst → Segmentation Expert → BigQuery Expert)
+3. ✅ **Demographic-aware segmentation** (age, gender, income targeting)
+4. ✅ Dynamic customer segmentation with real-time updates
+5. ✅ Uplift modeling for trigger optimization
+6. ✅ Streamlined 3-step user workflow design
+7. ✅ SQLite caching with lazy loading for performance
+8. ✅ **WebSocket real-time communication** with agent status streaming
+9. ✅ **Smart chart visualization** with Chart.js (automatic type detection)
+10. ✅ Real-time data integration patterns
+11. ✅ Comprehensive explainable AI for marketing
+12. ✅ Modern CDP architecture with BigQuery
+13. ✅ Cost-optimized query patterns (90% reduction in BigQuery queries)
+14. ✅ **Material Design 3** UI with split-view data explorer
+15. ✅ Professional data export capabilities (CSV, JSON, PNG, SQL)
 
 ## 📄 License
 

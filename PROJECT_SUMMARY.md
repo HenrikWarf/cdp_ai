@@ -126,12 +126,95 @@ Six comprehensive tables created:
   - Error handling
   - Type-safe requests
 
-### 4. Documentation
+### 4. Conversational Segmentation Explorer
+
+A professional data explorer interface powered by Google ADK (Agent Development Kit) with multi-agent architecture for natural language customer segmentation.
+
+#### Architecture
+- **Multi-Agent System** (`conversational_segmentation/`)
+  - **Customer Analyst Agent** (`customer_segmentation_agent_conv.py`)
+    - Main orchestrator agent (Gemini 2.5 Pro)
+    - Routes queries to specialized sub-agents
+    - Pre-configured with BigQuery dataset context
+  
+  - **Segmentation Expert Agent** (`segmentation_expert.py`)
+    - Specialized in customer segmentation tasks (Gemini 2.5 Flash)
+    - Analyzes table schemas and writes SQL
+    - Provides segmentation insights and validation
+  
+  - **BigQuery Expert Agent** (`bigquery_agent.py`)
+    - Handles data exploration queries
+    - Executes SQL and returns formatted results
+    - Schema inspection and table browsing
+
+#### Split-View Data Explorer Interface
+- **Left Pane (40%)** - Chat Conversation
+  - Natural language query input
+  - Conversational agent responses
+  - Markdown rendering with syntax highlighting
+  - Auto-scrolling message history
+  
+- **Right Pane (60%)** - Results Explorer
+  - **Overview Tab**: Empty state with example queries
+  - **Table Tab**: Interactive data tables with export (CSV, JSON, Copy)
+  - **Chart Tab**: Smart chart visualization with Chart.js
+  - **SQL Query Tab**: Generated SQL with copy functionality
+
+#### Chart Visualization Features
+- **Smart Chart Type Detection**
+  - Line charts for time-series data (dates/timestamps)
+  - Pie charts for small categorical data (≤10 rows)
+  - Bar charts for category comparisons (default)
+  - Doughnut charts for alternative proportions view
+  
+- **Manual Chart Type Override**
+  - Dropdown selector for 4 chart types
+  - Live chart switching without re-querying
+  - Maintains data integrity across chart types
+  
+- **Chart.js Integration**
+  - Material Design purple color palette
+  - Responsive canvas sizing
+  - Interactive tooltips on hover
+  - Export chart as PNG image
+  - Smooth animations and transitions
+
+#### WebSocket Communication
+- **Real-time Agent Events** (`api.py`)
+  - WebSocket endpoint (`/ws/chat`)
+  - Streams agent thinking process
+  - Shows active agent in UI status
+  - Displays tool outputs and final responses
+  - Multi-agent visibility (Customer Analyst → Segmentation Expert → BigQuery Expert)
+
+#### Material Design 3 UI
+- **Split-view grid layout** (CSS Grid)
+- **Glass morphism** effects with backdrop blur
+- **Purple primary palette** (#5B5FC7) matching main app
+- **Elevation shadows** for depth
+- **Smooth transitions** and micro-interactions
+- **Custom scrollbars** styled to match theme
+- **Responsive design** (mobile-friendly)
+
+#### Key Features
+✅ Natural language queries to explore customer data  
+✅ Multi-agent architecture with specialized expertise  
+✅ Real-time agent status visibility  
+✅ Automatic table data parsing from responses  
+✅ Smart chart type detection based on data structure  
+✅ 4 chart types with manual override  
+✅ Export data in multiple formats (CSV, JSON, PNG)  
+✅ SQL query display with copy functionality  
+✅ Split-view professional interface  
+✅ Material Design 3 styling consistent with main app  
+
+### 5. Documentation
 
 1. **README.md** - Comprehensive project documentation
 2. **SETUP_GUIDE.md** - Step-by-step setup instructions
 3. **API_DOCUMENTATION.md** - Complete API reference
 4. **PROJECT_SUMMARY.md** - This file
+5. **conversational_segmentation/README.md** - Conversational explorer documentation
 
 ## Key Features Implemented
 
@@ -321,24 +404,31 @@ Dashboard Request
 **Backend:**
 - Python 3.9+
 - Flask (Web framework)
-- Google Gemini 2.5 Flash via Vertex AI (Natural language processing)
+- Google Gemini 2.5 Flash/Pro via Vertex AI (Natural language processing)
+- Google ADK (Agent Development Kit) - Multi-agent orchestration
 - causalml (Uplift modeling)
 - scikit-learn (Machine learning)
 - Google Cloud BigQuery (Data warehouse)
 - SQLite3 (Local caching)
 - Pydantic (Data validation)
+- FastAPI (WebSocket server for conversational UI)
 
 **Frontend:**
 - Vanilla JavaScript (ES6 modules)
+- React 18 (for conversational UI)
+- Chart.js 4.4 (Data visualization)
+- Marked.js (Markdown parsing)
+- DOMPurify (HTML sanitization)
 - HTML5
-- CSS3 (Custom properties, Grid, Flexbox)
-- No frameworks - pure web standards
+- CSS3 (Custom properties, Grid, Flexbox, Material Design 3)
+- No build tools - pure web standards with CDN libraries
 
 **Infrastructure:**
 - Google Cloud Platform
 - BigQuery for data warehouse
 - SQLite for local caching
 - RESTful API architecture
+- WebSocket for real-time agent communication
 - Lazy loading pattern for cost optimization
 
 ## File Structure
@@ -390,6 +480,19 @@ ai_cdp/
 ├── scripts/
 │   ├── __init__.py
 │   └── generate_data.py                # Data generation
+├── conversational_segmentation/        # Conversational explorer (separate app)
+│   ├── api.py                          # FastAPI WebSocket server
+│   ├── customer_segmentation_agent_conv.py  # Main orchestrator agent
+│   ├── segmentation_expert.py         # Segmentation specialist agent
+│   ├── bigquery_agent.py               # Data query agent
+│   ├── bigquery_tools.py               # BigQuery tool functions
+│   ├── static/
+│   │   ├── index.html                  # Chat UI entry point
+│   │   ├── app.js                      # React components & WebSocket
+│   │   └── style.css                   # Material Design 3 styles
+│   ├── .env                            # Environment config
+│   ├── requirements.txt                # ADK dependencies
+│   └── README.md                       # Explorer documentation
 ├── requirements.txt                    # Python dependencies
 ├── env_template.txt                    # Environment variables template
 ├── .gitignore                          # Git ignore rules
@@ -444,6 +547,46 @@ ai_cdp/
   - "Target women aged 25-35 in New York" → filters automatically applied
   - "Campaign for high-income males aged 40-60" → demographic-aware segment
 - **Result**: More precise targeting, richer customer profiling
+
+### Conversational Segmentation Explorer (New Application)
+**Addition**: Professional data explorer with multi-agent architecture for natural language customer data analysis  
+**Implementation**:
+- **Multi-Agent System**: 
+  - Customer Analyst orchestrator (Gemini 2.5 Pro)
+  - Segmentation Expert specialist (Gemini 2.5 Flash)
+  - BigQuery Expert for data queries
+  - Agent routing and task delegation
+  
+- **Split-View Interface**:
+  - Left pane (40%): Chat conversation with agent
+  - Right pane (60%): Tabbed results explorer
+  - Material Design 3 styling matching main app
+  - Purple primary palette (#5B5FC7)
+  - Glass morphism and elevation shadows
+  
+- **Chart Visualization**:
+  - Smart chart type detection (line, bar, pie, doughnut)
+  - Chart.js integration with purple theme
+  - Manual chart type override dropdown
+  - Export charts as PNG images
+  
+- **Data Export**:
+  - Copy to clipboard
+  - CSV export
+  - JSON export
+  - SQL query display with copy
+  
+- **WebSocket Communication**:
+  - Real-time agent status visibility
+  - Streams thinking process
+  - Shows active agent in UI (Customer Analyst → Segmentation Expert → BigQuery Expert)
+  
+- **Examples**:
+  - "Show top 10 customers by CLV score" → Bar chart with export
+  - "Analyze transactions over last 30 days" → Line chart with time series
+  - "Segment high-value customers in New York" → Filtered table with SQL
+  
+- **Result**: Powerful data exploration tool with conversational interface and professional analytics features
 
 ### UI/UX Refinements (Latest Update)
 - Clean, minimalist color palette (removed purple gradients)
