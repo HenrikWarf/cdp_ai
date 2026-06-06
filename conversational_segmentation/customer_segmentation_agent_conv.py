@@ -15,6 +15,8 @@ class ConversationalCustomerSegmentationAgent(LlmAgent):
         # --- Agent Configuration Template ---
         # This is now just a dictionary of parameters, NOT an agent instance.
         # This prevents the sub-agent from being parented prematurely.
+
+        
 AGENT_CONFIG = {
 "name": "customer_analyst",
 "model": "gemini-2.5-pro",

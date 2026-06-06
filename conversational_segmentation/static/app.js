@@ -159,10 +159,10 @@ function TabNavigation({ activeTab, onTabChange, hasResults }) {
 
 function OverviewEmptyState({ onExampleClick }) {
     const examples = [
-        'Show all tables in cdp_data',
-        'List customers with high CLV',
-        'Analyze recent transactions',
-        'Show customer segments by location',
+        'Show me some overview metrics of the full customer base',
+        'Show number of customers per income level',
+        'Show number of customers by location',
+        'Analyse CLV score and list customers with high CLV',
     ];
 
     return (
